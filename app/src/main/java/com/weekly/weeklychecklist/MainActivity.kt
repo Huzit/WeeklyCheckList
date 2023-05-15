@@ -1,6 +1,8 @@
 package com.weekly.weeklychecklist
 
+import android.graphics.drawable.shapes.Shape
 import android.os.Bundle
+import android.widget.Switch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -11,7 +13,11 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CardElevation
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -19,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,37 +53,94 @@ fun TextBox(
     cornerSize: Int = 20,
     text: String
 ) {
-    Box(
+    Card(
         modifier = Modifier
-            .size(
-                width = width,
-                height = height
+            .size(width = width, height = height),
+        shape = RoundedCornerShape(cornerSize),
+//        elevation = CardDefaults.cardElevation(1.dp),
+        colors = CardDefaults.cardColors(SwitchBackgroundColor)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(
+                    width = width,
+                    height = height
+                )
+                .background(
+                    //뒷 배경
+                    color = SwitchBackgroundColor,
+                    shape = RoundedCornerShape(percent = cornerSize),
+
+                    )
+                .border(
+                    shape = RoundedCornerShape(percent = cornerSize),
+                    width = 3.dp,
+                    color = BorderColor
+                ),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+                text = text,
+                fontSize = 18.sp,
+                maxLines = 1,
+                fontWeight = FontWeight.Bold,
+                overflow = TextOverflow.Clip
             )
-            .shadow(
-                elevation = 1.dp,
-                shape = RoundedCornerShape(percent = cornerSize),
-                ambientColor = AmbientGray,
-                spotColor = SpotColor
-            )
-            .background( //뒷 배경
-                color = SwitchBackgroundColor,
-                shape = RoundedCornerShape(percent = cornerSize)
-            )
-            .border(
-                shape = RoundedCornerShape(percent = cornerSize),
-                width = 3.dp,
-                color = BorderColor
-            ),
-        contentAlignment = Alignment.CenterStart
-    ){
-        Text(
-            modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-            text = text,
-            fontSize = 18.sp,
-            maxLines = 1,
-            fontWeight = FontWeight.Bold,
-            overflow = TextOverflow.Clip
-        )
+        }
+    }
+}
+
+//그림자 테스트용
+@Composable
+fun InnerShadow() {
+    Card(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            SpotColor,
+                            Color.Transparent
+                        ),
+                        startY = 0f,
+                        endY = 20f
+                    ),
+                ),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                SpotColor,
+                                Color.Transparent,
+                            ),
+                            startX = 0f,
+                            endX = 20f
+                        )
+                    )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    SpotColor,
+                                    Color.Transparent,
+                                ),
+                                start = Offset.Zero,
+                                end = Offset(25f, 25f),
+                            )
+                        )
+                )
+            }
+        }
     }
 }
 
@@ -95,16 +160,16 @@ fun CustomToggleButton(
     val interactionSource = remember { MutableInteractionSource() }
     var switchOn by remember { mutableStateOf(isCheck) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
-    
+
     //테두리 Border
     Box(
         modifier = Modifier
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(percent = cornerSize),
-                ambientColor = AmbientGray,
-                spotColor = SpotColor
-            )
+//            .shadow(
+//                elevation = 4.dp,
+//                shape = RoundedCornerShape(percent = 70),
+//                ambientColor = AmbientGray,
+//                spotColor = SpotColor,
+//            )
             .size(width = width, height = height)
             .background( //뒷 배경
                 color = SwitchBackgroundColor,
@@ -172,6 +237,7 @@ private fun animateAlignmentAsState(
     return remember { derivedStateOf { BiasAlignment(horizontalBias = bias, verticalBias = 0f) } }
 }
 
+
 //앱 전체 컴포저블
 @Composable
 fun WeeklyChecklistApp(main: MainActivity) {
@@ -180,8 +246,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
             modifier = Modifier,
         ) {
             Row {
-                TextBox(text =
-                "가가가가가가가가가가가가가가가가가가가가가가가가가가가가")
+                TextBox(text = "가가가가가가가가가가가가가가가가가가가가가가가가가가가가")
                 CustomToggleButton(isCheck = false)
             }
         }
@@ -191,6 +256,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
+    InnerShadow()
 }
 
 @Preview(showBackground = false)
