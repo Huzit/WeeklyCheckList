@@ -23,6 +23,6 @@ val Green = Color(0xFF2ED600)
 val Red = Color(0xFFD40000)
 val SwitchBackgroundColor = Color(0xFF32CACACA)
 val AmbientGray = Color(0xFF4D8F8F8F)
-val SpotColor = Color(0xFFB6B6B6)
+val SpotColor = Color(0xFFA0A0A0)
 
 val BorderColor = Color(0x274D4D4D)
