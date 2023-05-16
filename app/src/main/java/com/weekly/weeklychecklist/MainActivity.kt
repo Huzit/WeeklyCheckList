@@ -60,60 +60,66 @@ fun TextBox(
 //        elevation = CardDefaults.cardElevation(1.dp),
         colors = CardDefaults.cardColors(SwitchBackgroundColor)
     ) {
-        Box(
-            modifier = Modifier
-                .size(
-                    width = width,
-                    height = height
-                )
-                .background(
-                    //뒷 배경
-                    color = SwitchBackgroundColor,
-                    shape = RoundedCornerShape(percent = cornerSize),
-
+        InnerShadow(width, height) {
+            Box(
+                modifier = Modifier
+                    .size(
+                        width = width,
+                        height = height
                     )
-                .border(
+                    .background(
+                        //뒷 배경
+                        color = SwitchBackgroundColor,
+                        shape = RoundedCornerShape(percent = cornerSize),
+
+                        )
+                /*.border(
                     shape = RoundedCornerShape(percent = cornerSize),
                     width = 3.dp,
                     color = BorderColor
-                ),
-            contentAlignment = Alignment.CenterStart
-        ) {
-            Text(
-                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-                text = text,
-                fontSize = 18.sp,
-                maxLines = 1,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Clip
-            )
+                )*/,
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+                    text = text,
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    fontWeight = FontWeight.Bold,
+                    overflow = TextOverflow.Clip
+                )
+            }
         }
     }
 }
 
 //그림자 테스트용
 @Composable
-fun InnerShadow() {
+fun InnerShadow(width: Dp, height: Dp, content: @Composable BoxScope.() -> Unit) {
     Card(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        colors = CardDefaults.cardColors(SwitchBackgroundColor)
     ) {
+        //위쪽 그림자
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(
+                    brush = Brush.verticalGradient(
                         colors = listOf(
                             SpotColor,
                             Color.Transparent
                         ),
                         startY = 0f,
-                        endY = 20f
+                        endY = 23f,
                     ),
                 ),
         ) {
+            //좌측 그림자
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxHeight()
+                    .width(8.dp)
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
@@ -121,24 +127,57 @@ fun InnerShadow() {
                                 Color.Transparent,
                             ),
                             startX = 0f,
-                            endX = 20f
+                            endX = 15f
                         )
                     )
+            )
+            //좌대각 그림자
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                SpotColor,
+                                Color.Transparent
+                            ),
+                            end = Offset(23f, 23f)
+                        )
+                    )
+            )
+            //우대각 그림자
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                SpotColor
+                            ),
+                            start = Offset(x = 100f, y = 100f),
+                            end = Offset(230f, 230f)
+                        )
+                    )
+            , contentAlignment = Alignment.CenterEnd
             ) {
+                //우측 그림자
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .width(6.dp)
                         .background(
-                            Brush.linearGradient(
+                            Brush.horizontalGradient(
                                 colors = listOf(
-                                    SpotColor,
                                     Color.Transparent,
+                                    SpotColor
                                 ),
-                                start = Offset.Zero,
-                                end = Offset(25f, 25f),
+                                startX = 0f,
+                                endX = 15f
                             )
-                        )
+                        ),
                 )
+                content()
             }
         }
     }
@@ -256,7 +295,9 @@ fun WeeklyChecklistApp(main: MainActivity) {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    InnerShadow()
+    InnerShadow(230.dp, 60.dp) {
+
+    }
 }
 
 @Preview(showBackground = false)
