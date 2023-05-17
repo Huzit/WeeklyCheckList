@@ -2,17 +2,30 @@ package com.weekly.weeklychecklist
 
 import android.graphics.drawable.shapes.Shape
 import android.os.Bundle
+import android.text.Layout
 import android.widget.Switch
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.SnackbarDefaults.backgroundColor
+import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.SwipeableState
+import androidx.compose.material.rememberDismissState
+import androidx.compose.material.rememberSwipeableState
+import androidx.compose.material.swipeable
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CardElevation
@@ -24,18 +37,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.font.FontVariation.width
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.ui.theme.*
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,40 +76,96 @@ fun TextBox(
         modifier = Modifier
             .size(width = width, height = height),
         shape = RoundedCornerShape(cornerSize),
-//        elevation = CardDefaults.cardElevation(1.dp),
         colors = CardDefaults.cardColors(SwitchBackgroundColor)
     ) {
-        InnerShadow(width, height) {
-            Box(
-                modifier = Modifier
-                    .size(
-                        width = width,
-                        height = height
-                    )
-                    .background(
-                        //뒷 배경
-                        color = SwitchBackgroundColor,
-                        shape = RoundedCornerShape(percent = cornerSize),
-
-                        )
-                /*.border(
+        Box(
+            modifier = Modifier
+                .size(
+                    width = width,
+                    height = height
+                )
+                .background(
+                    //뒷 배경
+                    color = SwitchBackgroundColor,
+                    shape = RoundedCornerShape(percent = cornerSize),
+                )
+                .border(
                     shape = RoundedCornerShape(percent = cornerSize),
                     width = 3.dp,
                     color = BorderColor
-                )*/,
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Text(
-                    modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-                    text = text,
-                    fontSize = 18.sp,
-                    maxLines = 1,
-                    fontWeight = FontWeight.Bold,
-                    overflow = TextOverflow.Clip
+                ),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Text(
+                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+                text = text,
+                fontSize = 18.sp,
+                maxLines = 1,
+                fontWeight = FontWeight.Bold,
+                overflow = TextOverflow.Clip
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterialApi::class, ExperimentalTextApi::class)
+@Composable
+fun SwipeableSample() {
+    val swipeState = rememberDismissState(confirmStateChange = {
+        //dismiss됐을 때 행동
+        if (it == DismissValue.DismissedToStart) {
+            //삭제
+        }
+        true
+    })
+
+    SwipeToDismiss(
+        state = swipeState,
+        dismissThresholds = { FractionalThreshold(0.25f) },
+        //swipe 되기 전 보여줄 화면
+        dismissContent = {
+            TextBox(text = "TestText")
+        },
+        background = {
+            val direction = swipeState.dismissDirection ?: return@SwipeToDismiss
+            val color by animateColorAsState(
+                when(swipeState.targetValue){
+                    DismissValue.Default            -> backgroundColor.copy(alpha = 0.5f)
+                    DismissValue.DismissedToStart   -> Color.Red.copy(alpha = 0.5f)
+                    DismissValue.DismissedToEnd     -> Color.Green.copy(alpha = 0.5f)
+                }
+            )
+            val icon = when(swipeState.targetValue){
+                DismissValue.Default            -> painterResource(id = R.drawable.switch_circle)
+                DismissValue.DismissedToStart   -> painterResource(id = R.drawable.done)
+                DismissValue.DismissedToEnd     -> painterResource(id = R.drawable.not_yet)
+            }
+            val scale by animateFloatAsState(
+                when(swipeState.targetValue == DismissValue.Default){
+                    true -> 0.5f
+                    else -> 1.5f
+                }
+            )
+            val alignment = when (direction){
+                DismissDirection.EndToStart -> Alignment.CenterEnd
+                DismissDirection.StartToEnd -> Alignment.CenterStart
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color)
+                    .padding(horizontal = 30.dp),
+                contentAlignment = alignment
+            ){
+                Icon(
+                    modifier = Modifier.scale(scale),
+                    painter = icon,
+                    contentDescription = null
                 )
             }
         }
-    }
+    )
 }
 
 //그림자 테스트용
@@ -152,14 +227,13 @@ fun InnerShadow(width: Dp, height: Dp, content: @Composable BoxScope.() -> Unit)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
+                                SpotColor,
                                 Color.Transparent,
-                                SpotColor
                             ),
-                            start = Offset(x = 100f, y = 100f),
-                            end = Offset(230f, 230f)
+                            start = Offset(x = Float.POSITIVE_INFINITY, y = 0f),
+                            end = Offset(000f, 1000f)
                         )
-                    )
-            , contentAlignment = Alignment.CenterEnd
+                    ), contentAlignment = Alignment.CenterEnd
             ) {
                 //우측 그림자
                 Box(
@@ -199,16 +273,9 @@ fun CustomToggleButton(
     val interactionSource = remember { MutableInteractionSource() }
     var switchOn by remember { mutableStateOf(isCheck) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
-
     //테두리 Border
     Box(
         modifier = Modifier
-//            .shadow(
-//                elevation = 4.dp,
-//                shape = RoundedCornerShape(percent = 70),
-//                ambientColor = AmbientGray,
-//                spotColor = SpotColor,
-//            )
             .size(width = width, height = height)
             .background( //뒷 배경
                 color = SwitchBackgroundColor,
@@ -284,21 +351,17 @@ fun WeeklyChecklistApp(main: MainActivity) {
         Surface(
             modifier = Modifier,
         ) {
-            Row {
-                TextBox(text = "가가가가가가가가가가가가가가가가가가가가가가가가가가가가")
-                CustomToggleButton(isCheck = false)
+            Column {
+                Row {
+                    TextBox(text = "가가가가가가가가가가가가가가가가가가가가가가가가가가가가")
+                    CustomToggleButton(isCheck = false)
+                }
+                SwipeableSample()
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    InnerShadow(230.dp, 60.dp) {
-
-    }
-}
 
 @Preview(showBackground = false)
 @Composable
@@ -307,5 +370,6 @@ fun SwitchPreview() {
         TextBox(text = "TestText")
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
+        SwipeableSample()
     }
 }
