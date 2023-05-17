@@ -21,7 +21,7 @@ val TransParent = Color(0x00FFFFFF)
 //Custom Switch Color
 val Green = Color(0xFF2ED600)
 val Red = Color(0xFFD40000)
-val SwitchBackgroundColor = Color(0xFF32CACACA)
+val SwitchBackgroundColor = Color(0xFFDBDBDB)
 val AmbientGray = Color(0xFF4D8F8F8F)
 val SpotColor = Color(0xFFA0A0A0)
 

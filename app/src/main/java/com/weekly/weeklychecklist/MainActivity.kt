@@ -3,7 +3,9 @@ package com.weekly.weeklychecklist
 import android.graphics.drawable.shapes.Shape
 import android.os.Bundle
 import android.text.Layout
+import android.util.Log
 import android.widget.Switch
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColorAsState
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissState
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
@@ -115,13 +118,16 @@ fun SwipeableSample() {
         //dismiss됐을 때 행동
         if (it == DismissValue.DismissedToStart) {
             //삭제
+            Log.d("이거", "삭제됨")
         }
         true
     })
 
     SwipeToDismiss(
         state = swipeState,
-        dismissThresholds = { FractionalThreshold(0.25f) },
+        dismissThresholds = { FractionalThreshold(0.1f) },
+        //스와이프 방향(기본값 양측)
+        directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
             TextBox(text = "TestText")
@@ -132,7 +138,7 @@ fun SwipeableSample() {
                 when(swipeState.targetValue){
                     DismissValue.Default            -> backgroundColor.copy(alpha = 0.5f)
                     DismissValue.DismissedToStart   -> Color.Red.copy(alpha = 0.5f)
-                    DismissValue.DismissedToEnd     -> Color.Green.copy(alpha = 0.5f)
+                    DismissValue.DismissedToEnd     -> backgroundColor.copy(alpha = 0.5f)
                 }
             )
             val icon = when(swipeState.targetValue){
@@ -147,14 +153,14 @@ fun SwipeableSample() {
                 }
             )
             val alignment = when (direction){
-                DismissDirection.EndToStart -> Alignment.CenterEnd
                 DismissDirection.StartToEnd -> Alignment.CenterStart
+                DismissDirection.EndToStart -> Alignment.CenterEnd
             }
 
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color)
+                    .background(color, shape = RoundedCornerShape(percent = 20))
                     .padding(horizontal = 30.dp),
                 contentAlignment = alignment
             ){
