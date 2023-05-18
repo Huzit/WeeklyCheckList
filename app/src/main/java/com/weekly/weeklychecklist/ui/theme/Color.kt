@@ -14,14 +14,14 @@ val Pink40 = Color(0xFF7D5260)
 val Red1 = Color(0xFFD14D72)
 val Red2 = Color(0xFFFF748C)
 val Red3 = Color(0xFFFCC8D1)
-val Red4 = Color(0xFF0C0C0C)
+val Red4 = Color(0xFFFEF2F4)
 
 val TransParent = Color(0x00FFFFFF)
 
 //Custom Switch Color
 val Green = Color(0xFF2ED600)
 val Red = Color(0xFFD40000)
-val SwitchBackgroundColor = Color(0xFFDBDBDB)
+val SwitchBackgroundColor = Color(0xFFE9E9E9)
 val AmbientGray = Color(0xFF4D8F8F8F)
 val SpotColor = Color(0xFFA0A0A0)
 
