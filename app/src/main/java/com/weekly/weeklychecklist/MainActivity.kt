@@ -1,11 +1,13 @@
 package com.weekly.weeklychecklist
 
+import android.media.session.PlaybackState.CustomAction
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,7 +17,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,16 +26,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
-import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.TextField
-import androidx.compose.material.TextFieldDefaults
-import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,22 +55,27 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.ui.theme.BorderColor
+import com.weekly.weeklychecklist.ui.theme.ClickedYellow
 import com.weekly.weeklychecklist.ui.theme.Green
 import com.weekly.weeklychecklist.ui.theme.Red
 import com.weekly.weeklychecklist.ui.theme.Red1
 import com.weekly.weeklychecklist.ui.theme.Red2
 import com.weekly.weeklychecklist.ui.theme.SpotColor
-import com.weekly.weeklychecklist.ui.theme.SwitchBackgroundColor
+import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
 
 class MainActivity : ComponentActivity() {
@@ -96,7 +99,7 @@ fun ChecklistBox(
         modifier = Modifier
             .size(width = width, height = height),
         shape = RoundedCornerShape(cornerSize),
-        colors = CardDefaults.cardColors(SwitchBackgroundColor)
+        colors = CardDefaults.cardColors(SuperLightGray)
     ) {
         Box(
             modifier = Modifier
@@ -106,7 +109,7 @@ fun ChecklistBox(
                 )
                 .background(
                     //뒷 배경
-                    color = SwitchBackgroundColor,
+                    color = SuperLightGray,
                     shape = RoundedCornerShape(percent = cornerSize),
                 )
                 .border(
@@ -196,7 +199,7 @@ fun ChecklistSwipable() {
 fun InnerShadow(width: Dp, height: Dp, content: @Composable BoxScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxSize(),
-        colors = CardDefaults.cardColors(SwitchBackgroundColor)
+        colors = CardDefaults.cardColors(SuperLightGray)
     ) {
         //위쪽 그림자
         Box(
@@ -301,7 +304,7 @@ fun CustomToggleButton(
         modifier = Modifier
             .size(width = width, height = height)
             .background( //뒷 배경
-                color = SwitchBackgroundColor,
+                color = SuperLightGray,
                 shape = RoundedCornerShape(percent = cornerSize)
             )
             .border( //테두리
@@ -357,10 +360,95 @@ fun CustomToggleButton(
     }
 }
 
-//체크리스트 박스 입력 보드
+//할 일 텍스트 필드
+@Composable
+fun CustomTextField(
+    fontSize: TextUnit = 20.sp,
+    height: Dp = 75.dp,
+    padding: Dp = 5.dp,
+    shapePercent: Int = 10
+){
+    var text by remember { mutableStateOf(TextFieldValue("")) }
+    BasicTextField(
+        value = text,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .background(SuperLightGray, shape = RoundedCornerShape(percent = shapePercent))
+            .padding(padding)
+        ,
+        textStyle = TextStyle(
+            fontWeight = FontWeight.Normal,
+            fontSize = fontSize,
+            textAlign = TextAlign.Start
+        ),
+        maxLines = 3
+        ,onValueChange = {newText ->
+            text = newText
+        }
+    )
+}
+@Composable
+fun WeekSelectButton(
+    week: String,
+    size: Dp = 48.dp,
+    fontSize: TextUnit = 5.sp
+){
+    var backgroundColor by remember { mutableStateOf(Color.Transparent) }
+    var isClicked by remember { mutableStateOf(false) }
+    Button(
+        modifier = Modifier
+            .size(size)
+            .background(color = Color.Transparent, shape = CircleShape),
+        colors = ButtonDefaults.buttonColors(backgroundColor),
+        border = BorderStroke(2.dp, Color.Black),
+        onClick = {
+            isClicked = !isClicked
+            backgroundColor = if(isClicked){
+                ClickedYellow
+            } else{
+                Color.Transparent
+            }
+        }
+    ){
+        //TODO 요일 텍스트가 안나옴
+        Text(
+            modifier = Modifier.fillMaxSize(),
+            text = week,
+            fontSize = fontSize,
+            color = Color.Black,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun WeekSelectButtonList(
+    space: Dp = 5.dp
+){
+    Row{
+        WeekSelectButton("월")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("화")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("수")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("목")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("금")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("토")
+        Spacer(modifier = Modifier.size(space))
+        WeekSelectButton("일")
+    }
+}
+
+//체크리스트 입력 보드
 @Composable
 fun ChecklistWriteBoard(
-    height: Dp = 350.dp
+    height: Dp = 350.dp,
+    fontSize: TextUnit = 24.sp
 ) {
     var text by remember { mutableStateOf(TextFieldValue("")) }
     Card(
@@ -402,35 +490,22 @@ fun ChecklistWriteBoard(
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "할 일",
-                        fontSize = 24.sp,
+                        fontSize = fontSize,
                         fontWeight = FontWeight.Bold
                     )
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp))
+                    CustomSpacer(height = 10.dp)
                     //할 일 입력
-                    TextField(
-                        value = text,
-                        onValueChange = {newText ->
-                            text = newText
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(72.dp),
-                        enabled = false
-                        ,shape = RoundedCornerShape(percent = 10),
-                    )
-                    Spacer(modifier = Modifier
-                        .fillMaxWidth()
-                        .height(20.dp)
-                    )
+                    CustomTextField()
+                    CustomSpacer(height = 20.dp)
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "초기화 요일",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
                     )
-
+                    CustomSpacer(height = 10.dp)
+                    WeekSelectButtonList()
+                    CustomSpacer(height = 20.dp)
                     //확인 버튼
                     Button(
                         modifier = Modifier
@@ -450,6 +525,14 @@ fun ChecklistWriteBoard(
             }
         }
     }
+}
+@Composable
+fun CustomSpacer(height:Dp){
+    Spacer(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+    )
 }
 
 //스위치 애니메이션 컴포저블
@@ -486,7 +569,15 @@ fun WeeklyChecklistApp(main: MainActivity) {
 @Composable
 fun SwitchPreview() {
     Column {
-        ChecklistBox(text = "TestText")
+        Row{
+            WeekSelectButton("월")
+            WeekSelectButton("화")
+            WeekSelectButton("수")
+            WeekSelectButton("목")
+            WeekSelectButton("금")
+            WeekSelectButton("토")
+            WeekSelectButton("일")
+        }
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
         ChecklistSwipable()
