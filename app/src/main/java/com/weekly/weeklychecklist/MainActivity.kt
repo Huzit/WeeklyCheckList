@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -30,9 +31,12 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.FloatingActionButton
+import androidx.compose.material.FloatingActionButtonDefaults
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.SnackbarDefaults.backgroundColor
 import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -388,33 +392,39 @@ fun CustomTextField(
         }
     )
 }
+
+//요일 선택 버튼
 @Composable
 fun WeekSelectButton(
     week: String,
-    size: Dp = 48.dp,
-    fontSize: TextUnit = 5.sp
+    size: Dp = 35.dp,
+    fontSize: TextUnit = 15.sp
 ){
+    val weekText by remember{ mutableStateOf(week) }
     var backgroundColor by remember { mutableStateOf(Color.Transparent) }
     var isClicked by remember { mutableStateOf(false) }
-    Button(
-        modifier = Modifier
-            .size(size)
-            .background(color = Color.Transparent, shape = CircleShape),
-        colors = ButtonDefaults.buttonColors(backgroundColor),
-        border = BorderStroke(2.dp, Color.Black),
-        onClick = {
-            isClicked = !isClicked
-            backgroundColor = if(isClicked){
-                ClickedYellow
-            } else{
-                Color.Transparent
-            }
-        }
+    Box(
+        modifier = Modifier.size(size),
+        contentAlignment = Alignment.Center
     ){
-        //TODO 요일 텍스트가 안나옴
+        Button(
+            modifier = Modifier
+                .size(size)
+                .background(color = Color.Transparent, shape = CircleShape),
+            colors = ButtonDefaults.buttonColors(backgroundColor),
+            border = BorderStroke(2.dp, Color.Black),
+            onClick = {
+                isClicked = !isClicked
+                backgroundColor = if(isClicked){
+                    ClickedYellow
+                } else{
+                    Color.Transparent
+                }
+            }
+        ){}
+        //일부러 이 위치, 브라켓 안에 넣으면 텍스트 미출력
         Text(
-            modifier = Modifier.fillMaxSize(),
-            text = week,
+            text = weekText,
             fontSize = fontSize,
             color = Color.Black,
             fontWeight = FontWeight.Bold,
@@ -422,10 +432,10 @@ fun WeekSelectButton(
         )
     }
 }
-
+//요일 선택버튼 레이아
 @Composable
 fun WeekSelectButtonList(
-    space: Dp = 5.dp
+    space: Dp = 6.dp
 ){
     Row{
         WeekSelectButton("월")
@@ -473,7 +483,7 @@ fun ChecklistWriteBoard(
                     .width(145.dp)
                     .height(5.dp)
                     .background(
-                        color = Color.LightGray,
+                        color = SpotColor,
                         shape = RoundedCornerShape(percent = 100),
                     )
             )
@@ -500,7 +510,7 @@ fun ChecklistWriteBoard(
                     Text(
                         modifier = Modifier.fillMaxWidth(),
                         text = "초기화 요일",
-                        fontSize = 15.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                     CustomSpacer(height = 10.dp)
@@ -535,6 +545,98 @@ fun CustomSpacer(height:Dp){
     )
 }
 
+@Composable
+fun NotificationDialog(
+    message: String,
+    positiveEvent: () -> Unit,
+    negativeEvent: () -> Unit,
+    width: Dp = 300.dp,
+    height: Dp = 200.dp,
+    percent: Int = 10,
+    fontSize: TextUnit = 23.sp,
+    buttonWidth: Dp = 120.dp,
+    buttonHeight: Dp = 50.dp,
+    buttonFontSize: TextUnit = 18.sp
+){
+    var message by remember { mutableStateOf(message) }
+    Card(
+        modifier = Modifier
+            .width(width)
+            .height(height),
+        colors = CardDefaults.cardColors(Color.White),
+        shape = RoundedCornerShape(percent = percent),
+        elevation = CardDefaults.cardElevation(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(20.dp),
+            contentAlignment = Alignment.TopCenter
+        ){
+            Column(
+                modifier = Modifier.fillMaxHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    modifier = Modifier.padding(top = 20.dp),
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold,
+                    text = message
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    Button(
+                        modifier = Modifier
+                            .width(buttonWidth)
+                            .height(buttonHeight),
+                        colors = ButtonDefaults.buttonColors(Color.LightGray),
+                        onClick = positiveEvent
+                    ) {
+                        Text(
+                            text = "취소",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = buttonFontSize
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Button(
+                        modifier = Modifier
+                            .width(buttonWidth)
+                            .height(buttonHeight),
+                        colors = ButtonDefaults.buttonColors(Red2),
+                        onClick = negativeEvent
+                    ) {
+                        Text(
+                            text = "확인",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = buttonFontSize
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+//플로팅 액션버튼
+@Composable
+fun AddCheckListButton(onClick: () -> Unit){
+    FloatingActionButton(
+        backgroundColor = Red2,
+        onClick = onClick,
+    ) {
+        Icon(
+            painter = painterResource(id = R.drawable.add) ,
+            tint = Color.White,
+            contentDescription = "Add"
+        )
+    }
+}
+
 //스위치 애니메이션 컴포저블
 @Composable
 private fun animateAlignmentAsState(
@@ -543,7 +645,6 @@ private fun animateAlignmentAsState(
     val bias by animateFloatAsState(targetValue = targetBiasValue)
     return remember { derivedStateOf { BiasAlignment(horizontalBias = bias, verticalBias = 0f) } }
 }
-
 
 //앱 전체 컴포저블
 @Composable
@@ -569,18 +670,12 @@ fun WeeklyChecklistApp(main: MainActivity) {
 @Composable
 fun SwitchPreview() {
     Column {
-        Row{
-            WeekSelectButton("월")
-            WeekSelectButton("화")
-            WeekSelectButton("수")
-            WeekSelectButton("목")
-            WeekSelectButton("금")
-            WeekSelectButton("토")
-            WeekSelectButton("일")
-        }
+        WeekSelectButton(week = "T")
+        AddCheckListButton(){}
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
         ChecklistSwipable()
         ChecklistWriteBoard()
+        NotificationDialog(message = "초기화 하시겠습니까?", positiveEvent = { /*TODO*/ }, negativeEvent = { /*TODO*/})
     }
 }
