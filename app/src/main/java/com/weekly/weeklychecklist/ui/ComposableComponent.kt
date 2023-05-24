@@ -30,6 +30,7 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.SnackbarDefaults
+import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -76,46 +78,66 @@ import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 class ComposableComponent {
 }
 
+
 //체크리스트 항목
 @Composable
 fun ChecklistBox(
+    backgroundWidth: Dp = 400.dp,
+    backgroundHeight: Dp = 72.dp,
     width: Dp = 230.dp,
     height: Dp = 60.dp,
     cornerSize: Int = 20,
     text: String
 ) {
-    Card(
+    Surface(
         modifier = Modifier
-            .size(width = width, height = height),
+            .size(width = backgroundWidth, height = backgroundHeight),
+        color = Color.White,
         shape = RoundedCornerShape(cornerSize),
-        colors = CardDefaults.cardColors(SuperLightGray)
+        elevation = 10.dp,
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(
-                    width = width,
-                    height = height
-                )
-                .background(
-                    //뒷 배경
-                    color = SuperLightGray,
-                    shape = RoundedCornerShape(percent = cornerSize),
-                )
-                .border(
-                    shape = RoundedCornerShape(percent = cornerSize),
-                    width = 3.dp,
-                    color = BorderColor
-                ),
-            contentAlignment = Alignment.CenterStart
+                .fillMaxSize()
+                .padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-                text = text,
-                fontSize = 18.sp,
-                maxLines = 1,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Clip
-            )
+            Card(
+                modifier = Modifier
+                    .size(width = width, height = height),
+                shape = RoundedCornerShape(cornerSize),
+                colors = CardDefaults.cardColors(SuperLightGray)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(
+                            width = width,
+                            height = height
+                        )
+                        .background(
+                            //뒷 배경
+                            color = SuperLightGray,
+                            shape = RoundedCornerShape(percent = cornerSize),
+                        )
+                        .border(
+                            shape = RoundedCornerShape(percent = cornerSize),
+                            width = 3.dp,
+                            color = BorderColor
+                        ),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    Text(
+                        modifier = Modifier.padding(start = 10.dp, end = 10.dp),
+                        text = text,
+                        fontSize = 18.sp,
+                        maxLines = 1,
+                        fontWeight = FontWeight.Bold,
+                        overflow = TextOverflow.Clip
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            CustomToggleButton(isCheck = false)
         }
     }
 }
@@ -446,12 +468,13 @@ fun ChecklistWriteBoard(
     fontSize: TextUnit = 24.sp
 ) {
     var text by remember { mutableStateOf(TextFieldValue("")) }
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .height(height),
-        colors = CardDefaults.cardColors(Color.White),
-        elevation = CardDefaults.cardElevation(20.dp)
+        color = Color.White,
+        elevation = 10.dp,
+        shape = RoundedCornerShape(percent = 10)
     )
     {
         Column(
@@ -544,13 +567,13 @@ fun NotificationDialog(
     buttonFontSize: TextUnit = 18.sp
 ){
     var message by remember { mutableStateOf(message) }
-    Card(
+    Surface(
         modifier = Modifier
             .width(width)
             .height(height),
-        colors = CardDefaults.cardColors(Color.White),
+        color = Color.White,
         shape = RoundedCornerShape(percent = percent),
-        elevation = CardDefaults.cardElevation(10.dp)
+        elevation = 10.dp
     ) {
         Box(
             modifier = Modifier
@@ -619,6 +642,7 @@ fun NotificationDialog(
 @Composable
 fun AddCheckListButton(onClick: () -> Unit){
     FloatingActionButton(
+        modifier = Modifier.size(70.dp),
         backgroundColor = Red2,
         onClick = onClick,
     ) {
@@ -637,4 +661,18 @@ private fun animateAlignmentAsState(
 ): State<BiasAlignment> {
     val bias by animateFloatAsState(targetValue = targetBiasValue)
     return remember { derivedStateOf { BiasAlignment(horizontalBias = bias, verticalBias = 0f) } }
+}
+
+@Preview(showBackground = false)
+@Composable
+fun SwitchPreview() {
+    Column {
+        WeekSelectButton(week = "월")
+        AddCheckListButton(){}
+        CustomToggleButton(isCheck = true)
+        CustomToggleButton(isCheck = false)
+        ChecklistSwipable()
+        ChecklistWriteBoard()
+        NotificationDialog(message = "초기화 하시겠습니까?", positiveEvent = { /*TODO*/ }, negativeEvent = { /*TODO*/})
+    }
 }
