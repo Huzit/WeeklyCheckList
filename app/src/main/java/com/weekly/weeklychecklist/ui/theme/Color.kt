@@ -16,6 +16,9 @@ val Red2 = Color(0xFFFF748C)
 val Red3 = Color(0xFFFCC8D1)
 val Red4 = Color(0xFFFEF2F4)
 
+//Dialog Background shadow
+val DialogShadow = Color(0x80B4B4B4)
+
 //Week Round Button
 val ClickedYellow = Color(0xFFFFEB81)
 

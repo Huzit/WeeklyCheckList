@@ -1,5 +1,6 @@
 package com.weekly.weeklychecklist.ui
 
+import android.hardware.lights.Light
 import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -53,6 +54,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -68,6 +70,7 @@ import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
+import com.weekly.weeklychecklist.ui.theme.DialogShadow
 import com.weekly.weeklychecklist.ui.theme.Green
 import com.weekly.weeklychecklist.ui.theme.Red
 import com.weekly.weeklychecklist.ui.theme.Red1
@@ -82,13 +85,15 @@ class ComposableComponent {
 //체크리스트 항목
 @Composable
 fun ChecklistBox(
-    backgroundWidth: Dp = 400.dp,
-    backgroundHeight: Dp = 72.dp,
-    width: Dp = 230.dp,
-    height: Dp = 60.dp,
-    cornerSize: Int = 20,
     text: String
 ) {
+    val configuration = LocalConfiguration.current
+
+    val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
+    val backgroundHeight: Dp = 72.dp
+    val width = configuration.screenWidthDp.minus(160).dp
+    val height = 60.dp
+    val cornerSize = 20
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
@@ -558,80 +563,87 @@ fun NotificationDialog(
     message: String,
     positiveEvent: () -> Unit,
     negativeEvent: () -> Unit,
-    width: Dp = 300.dp,
-    height: Dp = 200.dp,
-    percent: Int = 10,
-    fontSize: TextUnit = 23.sp,
-    buttonWidth: Dp = 120.dp,
-    buttonHeight: Dp = 50.dp,
-    buttonFontSize: TextUnit = 18.sp
+
 ){
-    var message by remember { mutableStateOf(message) }
-    Surface(
-        modifier = Modifier
-            .width(width)
-            .height(height),
-        color = Color.White,
-        shape = RoundedCornerShape(percent = percent),
-        elevation = 10.dp
-    ) {
-        Box(
+    val width: Dp = 300.dp
+    val height: Dp = 200.dp
+    val percent: Int = 10
+    val fontSize: TextUnit = 23.sp
+    val buttonWidth: Dp = 120.dp
+    val buttonHeight: Dp = 50.dp
+    val buttonFontSize: TextUnit = 18.sp
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+            .background(color = DialogShadow),
+        contentAlignment = Alignment.Center
+    ){
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            contentAlignment = Alignment.TopCenter
-        ){
-            Column(
-                modifier = Modifier.fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(130.dp),
-                    contentAlignment = Alignment.Center
-                ){
-                    Text(
-//                    modifier = Modifier.padding(top = 30.dp),
-                        fontSize = fontSize,
-                        fontWeight = FontWeight.Bold,
-                        text = message
-                    )
-                }
-                Spacer(modifier = Modifier.weight(1f))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
+                .width(width)
+                .height(height),
+            color = Color.White,
+            shape = RoundedCornerShape(percent = percent),
+            elevation = 10.dp
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(10.dp),
+                contentAlignment = Alignment.TopCenter
+            ){
+                Column(
+                    modifier = Modifier.fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Button(
+                    Box(
                         modifier = Modifier
-                            .width(buttonWidth)
-                            .height(buttonHeight),
-                        colors = ButtonDefaults.buttonColors(Color.LightGray),
-                        onClick = positiveEvent
-                    ) {
+                            .fillMaxWidth()
+                            .height(130.dp),
+                        contentAlignment = Alignment.Center
+                    ){
                         Text(
-                            text = "취소",
+    //                    modifier = Modifier.padding(top = 30.dp),
+                            fontSize = fontSize,
                             fontWeight = FontWeight.Bold,
-                            fontSize = buttonFontSize
+                            text = message
                         )
                     }
-                    
                     Spacer(modifier = Modifier.weight(1f))
-                    
-                    Button(
-                        modifier = Modifier
-                            .width(buttonWidth)
-                            .height(buttonHeight),
-                        colors = ButtonDefaults.buttonColors(Red2),
-                        onClick = negativeEvent
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
                     ) {
-                        Text(
-                            text = "확인",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = buttonFontSize
-                        )
+                        Button(
+                            modifier = Modifier
+                                .width(buttonWidth)
+                                .height(buttonHeight),
+                            colors = ButtonDefaults.buttonColors(Color.LightGray),
+                            onClick = positiveEvent
+                        ) {
+                            Text(
+                                text = "취소",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = buttonFontSize
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Button(
+                            modifier = Modifier
+                                .width(buttonWidth)
+                                .height(buttonHeight),
+                            colors = ButtonDefaults.buttonColors(Red2),
+                            onClick = negativeEvent
+                        ) {
+                            Text(
+                                text = "확인",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = buttonFontSize
+                            )
+                        }
                     }
                 }
             }

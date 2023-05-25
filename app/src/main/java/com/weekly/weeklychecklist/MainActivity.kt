@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -41,13 +42,13 @@ class MainActivity : ComponentActivity() {
 //앱 전체 컴포저블
 @Composable
 fun WeeklyChecklistApp(main: MainActivity) {
-    val cornerSize = 10
+    val cornerSize = 7
+    val boxHeight = LocalConfiguration.current.screenHeightDp.minus(100).dp
     WeeklyCheckListTheme {
         Surface(
             modifier = Modifier,
             color = Red4,
             shape = RoundedCornerShape(cornerSize, cornerSize, 0, 0),
-            shadowElevation = 10.dp
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -66,7 +67,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(700.dp)
+                        .height(boxHeight)
                         .background(color = Color.White, shape = RoundedCornerShape(cornerSize, cornerSize, 0, 0))
                         .padding(top = 20.dp, start = 10.dp, end = 10.dp),
                     contentAlignment = Alignment.TopCenter
