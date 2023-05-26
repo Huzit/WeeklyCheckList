@@ -89,6 +89,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
                             contentAlignment = Alignment.TopEnd
                         ){
                             AddCheckListButton {
+                                //Todo 버튼 클릭 시 체크리스트 입력 보드가 나와야함
 
                             }
                         }

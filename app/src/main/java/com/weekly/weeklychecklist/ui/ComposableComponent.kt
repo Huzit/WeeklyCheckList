@@ -2,6 +2,7 @@ package com.weekly.weeklychecklist.ui
 
 import android.hardware.lights.Light
 import android.util.Log
+import android.widget.Space
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
@@ -33,6 +35,7 @@ import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.SnackbarDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.TextButton
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,6 +61,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -99,7 +103,8 @@ fun ChecklistBox(
             .size(width = backgroundWidth, height = backgroundHeight),
         color = Color.White,
         shape = RoundedCornerShape(cornerSize),
-        elevation = 10.dp,
+        border = BorderStroke(1.dp, color = SuperLightGray)
+//        elevation = 10.dp,
     ) {
         Row(
             modifier = Modifier
@@ -559,97 +564,74 @@ fun CustomSpacer(height: Dp){
 }
 
 @Composable
-fun NotificationDialog(
+fun CustomAlertDialog(
     message: String,
     positiveEvent: () -> Unit,
     negativeEvent: () -> Unit,
-
 ){
     val width: Dp = 300.dp
     val height: Dp = 200.dp
-    val percent: Int = 10
     val fontSize: TextUnit = 23.sp
     val buttonWidth: Dp = 120.dp
     val buttonHeight: Dp = 50.dp
     val buttonFontSize: TextUnit = 18.sp
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-            .background(color = DialogShadow),
-        contentAlignment = Alignment.Center
-    ){
-        Surface(
-            modifier = Modifier
-                .width(width)
-                .height(height),
-            color = Color.White,
-            shape = RoundedCornerShape(percent = percent),
-            elevation = 10.dp
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(10.dp),
-                contentAlignment = Alignment.TopCenter
-            ){
-                Column(
-                    modifier = Modifier.fillMaxHeight(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
+    AlertDialog(
+        modifier = Modifier.size(width, height),
+        onDismissRequest = {},
+        title = {},
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = message,
+                    fontSize = fontSize,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        buttons = {
+            CustomSpacer(height = 20.dp)
+            Row(modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Button(
+                    modifier = Modifier
+                        .width(buttonWidth)
+                        .height(buttonHeight),
+                    colors = ButtonDefaults.buttonColors(Red2),
+                    onClick = positiveEvent
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(130.dp),
-                        contentAlignment = Alignment.Center
-                    ){
-                        Text(
-    //                    modifier = Modifier.padding(top = 30.dp),
-                            fontSize = fontSize,
-                            fontWeight = FontWeight.Bold,
-                            text = message
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        Button(
-                            modifier = Modifier
-                                .width(buttonWidth)
-                                .height(buttonHeight),
-                            colors = ButtonDefaults.buttonColors(Color.LightGray),
-                            onClick = positiveEvent
-                        ) {
-                            Text(
-                                text = "취소",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = buttonFontSize
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.weight(1f))
-
-                        Button(
-                            modifier = Modifier
-                                .width(buttonWidth)
-                                .height(buttonHeight),
-                            colors = ButtonDefaults.buttonColors(Red2),
-                            onClick = negativeEvent
-                        ) {
-                            Text(
-                                text = "확인",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = buttonFontSize
-                            )
-                        }
-                    }
+                    Text(
+                        text = "취소",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = buttonFontSize
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Button(
+                    modifier = Modifier
+                        .width(buttonWidth)
+                        .height(buttonHeight),
+                    colors = ButtonDefaults.buttonColors(Color.LightGray),
+                    onClick = negativeEvent
+                ) {
+                    Text(
+                        text = "확인",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = buttonFontSize
+                    )
                 }
             }
-        }
-    }
+        },
+        shape = RoundedCornerShape(24.dp)
+    )
 }
+
 //플로팅 액션버튼
 @Composable
 fun AddCheckListButton(onClick: () -> Unit){
@@ -685,6 +667,11 @@ fun SwitchPreview() {
         CustomToggleButton(isCheck = false)
         ChecklistSwipable()
         ChecklistWriteBoard()
-        NotificationDialog(message = "초기화 하시겠습니까?", positiveEvent = { /*TODO*/ }, negativeEvent = { /*TODO*/})
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun testPrevicew(){
+    CustomAlertDialog(message = "초기화 ㄱ?", positiveEvent = { /*TODO*/ }, negativeEvent = {})
 }
