@@ -475,7 +475,7 @@ fun WeekSelectButtonList(
 @Composable
 fun ChecklistWriteBoard(
     height: Dp = 350.dp,
-    fontSize: TextUnit = 24.sp
+    fontSize: TextUnit = 24.sp,
 ) {
     var text by remember { mutableStateOf(TextFieldValue("")) }
     Surface(
@@ -484,7 +484,7 @@ fun ChecklistWriteBoard(
             .height(height),
         color = Color.White,
         elevation = 10.dp,
-        shape = RoundedCornerShape(percent = 10)
+        shape = RoundedCornerShape(topStartPercent = 10, topEndPercent = 10)
     )
     {
         Column(
@@ -541,7 +541,7 @@ fun ChecklistWriteBoard(
                             .height(50.dp)
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
-                        onClick = { /*TODO*/ }
+                        onClick = {  }
                     ) {
                         Text(
                             text = "확인",
