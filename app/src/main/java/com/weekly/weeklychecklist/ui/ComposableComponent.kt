@@ -1,8 +1,6 @@
 package com.weekly.weeklychecklist.ui
 
-import android.hardware.lights.Light
 import android.util.Log
-import android.widget.Space
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -35,7 +33,6 @@ import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.SnackbarDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.TextButton
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,7 +58,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
@@ -71,16 +67,20 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.weekly.weeklychecklist.DayOfWeek
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
-import com.weekly.weeklychecklist.ui.theme.DialogShadow
 import com.weekly.weeklychecklist.ui.theme.Green
 import com.weekly.weeklychecklist.ui.theme.Red
 import com.weekly.weeklychecklist.ui.theme.Red1
 import com.weekly.weeklychecklist.ui.theme.Red2
 import com.weekly.weeklychecklist.ui.theme.SpotColor
 import com.weekly.weeklychecklist.ui.theme.SuperLightGray
+import com.weekly.weeklychecklist.vm.CheckListInfo
+import com.weekly.weeklychecklist.vm.CheckListViewModel
 
 class ComposableComponent {
 }
@@ -383,12 +383,12 @@ fun CustomToggleButton(
 
 //할 일 텍스트 필드
 @Composable
-fun CustomTextField(
+fun customTextField(
     fontSize: TextUnit = 20.sp,
     height: Dp = 75.dp,
     padding: Dp = 5.dp,
     shapePercent: Int = 10
-){
+): String{
     var text by remember { mutableStateOf(TextFieldValue("")) }
     BasicTextField(
         value = text,
@@ -408,16 +408,17 @@ fun CustomTextField(
             text = newText
         }
     )
+    return text.text
 }
 
 //요일 선택 버튼
 @Composable
-fun WeekSelectButton(
-    week: String,
+fun weekSelectButton(
+    week: DayOfWeek,
     size: Dp = 35.dp,
     fontSize: TextUnit = 15.sp
-){
-    val weekText by remember{ mutableStateOf(week) }
+): DayOfWeek{
+    val weekText by remember{ mutableStateOf(week.name) }
     var backgroundColor by remember { mutableStateOf(Color.Transparent) }
     var isClicked by remember { mutableStateOf(false) }
     Box(
@@ -448,27 +449,46 @@ fun WeekSelectButton(
             textAlign = TextAlign.Center
         )
     }
+
+    return when(week){
+        DayOfWeek.월 -> {if(isClicked) DayOfWeek.월 else DayOfWeek.널}
+        DayOfWeek.화 -> {if(isClicked) DayOfWeek.화 else DayOfWeek.널}
+        DayOfWeek.수 -> {if(isClicked) DayOfWeek.수 else DayOfWeek.널}
+        DayOfWeek.목 -> {if(isClicked) DayOfWeek.목 else DayOfWeek.널}
+        DayOfWeek.금 -> {if(isClicked) DayOfWeek.금 else DayOfWeek.널}
+        DayOfWeek.토 -> {if(isClicked) DayOfWeek.토 else DayOfWeek.널}
+        DayOfWeek.일 -> {if(isClicked) DayOfWeek.일 else DayOfWeek.널}
+        DayOfWeek.널 -> {DayOfWeek.널}
+    }
 }
 //요일 선택버튼 레이아
 @Composable
-fun WeekSelectButtonList(
+fun weekSelectButtonList(
     space: Dp = 10.dp
-){
+): Set<DayOfWeek> {
+    val weekSet = arrayListOf<DayOfWeek>()
     Row{
-        WeekSelectButton("월")
+        weekSet.add(weekSelectButton(DayOfWeek.월))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("화")
+
+        weekSet.add(weekSelectButton(DayOfWeek.화))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("수")
+
+        weekSet.add(weekSelectButton(DayOfWeek.수))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("목")
+
+        weekSet.add(weekSelectButton(DayOfWeek.목))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("금")
+
+        weekSet.add(weekSelectButton(DayOfWeek.금))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("토")
+
+        weekSet.add(weekSelectButton(DayOfWeek.토))
         Spacer(modifier = Modifier.size(space))
-        WeekSelectButton("일")
+
+        weekSet.add(weekSelectButton(DayOfWeek.일))
     }
+    return weekSet.toSet()
 }
 
 //체크리스트 입력 보드
@@ -476,8 +496,12 @@ fun WeekSelectButtonList(
 fun ChecklistWriteBoard(
     height: Dp = 350.dp,
     fontSize: TextUnit = 24.sp,
+    buttonOnClick: () -> Unit
 ) {
-    var text by remember { mutableStateOf(TextFieldValue("")) }
+    lateinit var text: String
+    lateinit var dayOfWeek: Set<DayOfWeek>
+    val checkListVM: CheckListViewModel by viewModel()
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -522,8 +546,10 @@ fun ChecklistWriteBoard(
                         fontWeight = FontWeight.Bold
                     )
                     CustomSpacer(height = 20.dp)
+
                     //할 일 입력
-                    CustomTextField()
+                    text = customTextField()
+
                     CustomSpacer(height = 20.dp)
                     Text(
                         modifier = Modifier.fillMaxWidth(),
@@ -532,7 +558,10 @@ fun ChecklistWriteBoard(
                         fontWeight = FontWeight.Bold
                     )
                     CustomSpacer(height = 20.dp)
-                    WeekSelectButtonList()
+
+                    //요일 입력 버튼
+                    dayOfWeek = weekSelectButtonList()
+
                     CustomSpacer(height = 20.dp)
                     //확인 버튼
                     Button(
@@ -541,7 +570,10 @@ fun ChecklistWriteBoard(
                             .height(50.dp)
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
-                        onClick = {  }
+                        onClick = {
+                            checkListVM.checkList.add(CheckListInfo(text, dayOfWeek))
+                            buttonOnClick()
+                        }
                     ) {
                         Text(
                             text = "확인",
@@ -661,12 +693,12 @@ private fun animateAlignmentAsState(
 @Composable
 fun SwitchPreview() {
     Column {
-        WeekSelectButton(week = "월")
+        weekSelectButton(week = DayOfWeek.월)
         AddCheckListButton(){}
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
         ChecklistSwipable()
-        ChecklistWriteBoard()
+        ChecklistWriteBoard(){}
     }
 }
 
