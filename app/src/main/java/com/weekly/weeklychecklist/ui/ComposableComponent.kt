@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,10 +50,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -67,9 +65,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.ViewModelProvider
 import com.weekly.weeklychecklist.DayOfWeek
+import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
@@ -89,7 +87,8 @@ class ComposableComponent {
 //체크리스트 항목
 @Composable
 fun ChecklistBox(
-    text: String
+    text: String,
+    done: Boolean
 ) {
     val configuration = LocalConfiguration.current
 
@@ -131,7 +130,7 @@ fun ChecklistBox(
                         )
                         .border(
                             shape = RoundedCornerShape(percent = cornerSize),
-                            width = 3.dp,
+                            width = 1.dp,
                             color = BorderColor
                         ),
                     contentAlignment = Alignment.CenterStart
@@ -147,7 +146,7 @@ fun ChecklistBox(
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
-            CustomToggleButton(isCheck = false)
+            CustomToggleButton(isCheck = done)
         }
     }
 }
@@ -155,11 +154,16 @@ fun ChecklistBox(
 //스와이프 삭제기능
 @OptIn(ExperimentalMaterialApi::class, ExperimentalTextApi::class)
 @Composable
-fun ChecklistSwipable() {
+fun ChecklistSwipable(
+    text: String,
+    done: Boolean,
+    removeEvent: () -> Unit
+) {
     val swipeState = rememberDismissState(confirmStateChange = {
         //dismiss 됐을 때 행동
         if (it == DismissValue.DismissedToStart) {
             Log.d("이거", "삭제됨")
+            removeEvent()
         }
         true
     })
@@ -171,7 +175,7 @@ fun ChecklistSwipable() {
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            ChecklistBox(text = "TestText")
+            ChecklistBox(text = text, done = done)
         },
         background = {
             val direction = swipeState.dismissDirection ?: return@SwipeToDismiss
@@ -183,7 +187,7 @@ fun ChecklistSwipable() {
                 }
             )
             val icon = when (swipeState.targetValue) {
-                DismissValue.Default -> painterResource(id = R.drawable.switch_circle)
+                DismissValue.Default -> painterResource(id = R.drawable.delete)
                 DismissValue.DismissedToStart -> painterResource(id = R.drawable.delete)
                 DismissValue.DismissedToEnd -> painterResource(id = R.drawable.delete)
             }
@@ -215,95 +219,6 @@ fun ChecklistSwipable() {
     )
 }
 
-//그림자 테스트용
-@Composable
-fun InnerShadow(width: Dp, height: Dp, content: @Composable BoxScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxSize(),
-        colors = CardDefaults.cardColors(SuperLightGray)
-    ) {
-        //위쪽 그림자
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            SpotColor,
-                            Color.Transparent
-                        ),
-                        startY = 0f,
-                        endY = 23f,
-                    ),
-                ),
-        ) {
-            //좌측 그림자
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(8.dp)
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                SpotColor,
-                                Color.Transparent,
-                            ),
-                            startX = 0f,
-                            endX = 15f
-                        )
-                    )
-            )
-            //좌대각 그림자
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                SpotColor,
-                                Color.Transparent
-                            ),
-                            end = Offset(23f, 23f)
-                        )
-                    )
-            )
-            //우대각 그림자
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                SpotColor,
-                                Color.Transparent,
-                            ),
-                            start = Offset(x = Float.POSITIVE_INFINITY, y = 0f),
-                            end = Offset(000f, 1000f)
-                        )
-                    ), contentAlignment = Alignment.CenterEnd
-            ) {
-                //우측 그림자
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .width(6.dp)
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    SpotColor
-                                ),
-                                startX = 0f,
-                                endX = 15f
-                            )
-                        ),
-                )
-                content()
-            }
-        }
-    }
-}
-
 //커스텀 스위치
 @Composable
 fun CustomToggleButton(
@@ -311,7 +226,7 @@ fun CustomToggleButton(
     height: Dp = 45.dp,
     trackColor: Color = BorderColor,
     gapBetweenThumbAndTrackEdge: Dp = 5.dp,
-    borderWidth: Dp = 3.dp,
+    borderWidth: Dp = 1.dp,
     cornerSize: Int = 50,
     iConInnerPadding: Dp = 4.dp,
     switchSize: Dp = 40.dp,
@@ -449,7 +364,6 @@ fun weekSelectButton(
             textAlign = TextAlign.Center
         )
     }
-
     return when(week){
         DayOfWeek.월 -> {if(isClicked) DayOfWeek.월 else DayOfWeek.널}
         DayOfWeek.화 -> {if(isClicked) DayOfWeek.화 else DayOfWeek.널}
@@ -461,7 +375,8 @@ fun weekSelectButton(
         DayOfWeek.널 -> {DayOfWeek.널}
     }
 }
-//요일 선택버튼 레이아
+//요일 선택버튼 레이어
+//버튼 누를 때 마다 리컴포지션이 일어남
 @Composable
 fun weekSelectButtonList(
     space: Dp = 10.dp
@@ -488,7 +403,7 @@ fun weekSelectButtonList(
 
         weekSet.add(weekSelectButton(DayOfWeek.일))
     }
-    return weekSet.toSet()
+    return weekSet.filter { it != DayOfWeek.널 }.toSet()
 }
 
 //체크리스트 입력 보드
@@ -500,7 +415,7 @@ fun ChecklistWriteBoard(
 ) {
     lateinit var text: String
     lateinit var dayOfWeek: Set<DayOfWeek>
-    val checkListVM: CheckListViewModel by viewModel()
+    val clVM: CheckListViewModel = ViewModelProvider(LocalContext.current as MainActivity).get(CheckListViewModel::class.java)
 
     Surface(
         modifier = Modifier
@@ -571,7 +486,7 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            checkListVM.checkList.add(CheckListInfo(text, dayOfWeek))
+                            clVM.checkList.add(CheckListInfo(text, dayOfWeek))
                             buttonOnClick()
                         }
                     ) {
@@ -697,7 +612,7 @@ fun SwitchPreview() {
         AddCheckListButton(){}
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
-        ChecklistSwipable()
+        ChecklistSwipable("test", true){}
         ChecklistWriteBoard(){}
     }
 }

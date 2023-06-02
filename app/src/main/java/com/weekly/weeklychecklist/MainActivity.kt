@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Text
@@ -34,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -62,7 +65,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WeeklyChecklistApp(main: MainActivity) {
     val cornerSize = 7
-    val boxHeight = LocalConfiguration.current.screenHeightDp.minus(100).dp
+    val boxHeight = LocalConfiguration.current.screenHeightDp.minus(50).dp
 
     WeeklyCheckListTheme {
         //뒷 배경
@@ -112,10 +115,30 @@ fun WeeklyChecklistApp(main: MainActivity) {
 //투두 리스트
 @Composable
 fun ListTodo() {
-    Column(
+    val owner = LocalContext.current as MainActivity
+    val clVM = viewModel<CheckListViewModel>()
+    val cl = clVM.checkList
+    val du = 200
+
+    LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        ChecklistSwipable()
+        //색인을 가진 리사이클러뷰
+        itemsIndexed(cl){ index, item ->
+//            AnimatedVisibility(
+//                visible = item.visibility.value,
+//                exit = fadeOut(animationSpec = TweenSpec(du, 200, FastOutLinearInEasing))
+//            ) {
+            ChecklistSwipable(text = item.checkListContent, done = item.done){
+                item.visibility.value = false
+//                    CoroutineScope(Dispatchers.Default).launch {
+//                        delay(du+200L)
+                    cl.removeAt(index)
+//                    }
+                Log.d("리스트 숫자", cl.size.toString())
+            }
+//            }
+        }
     }
 }
 
@@ -123,7 +146,6 @@ fun ListTodo() {
 @Composable
 fun FloatingActions(context: Context) {
     var isPressed by remember { mutableStateOf(false) }
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -163,7 +185,6 @@ fun FloatingActions(context: Context) {
         exit = slideOut(targetOffset = { IntOffset(0, halfHeight)}) + fadeOut(targetAlpha = 0f)
     ) {
         ChecklistWriteBoard(){
-            //TODO 버튼 클릭 이벤트
             isPressed = false
         }
     }
