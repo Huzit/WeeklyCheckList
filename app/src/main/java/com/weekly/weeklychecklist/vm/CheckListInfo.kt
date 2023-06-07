@@ -6,7 +6,7 @@ import com.weekly.weeklychecklist.DayOfWeek
 
 data class CheckListInfo(
     //할 일
-    var checkListContent: String,
+    var checklistContent: String,
     //초기화 요일
     var restartWeek: Set<DayOfWeek>,
     //수행여부

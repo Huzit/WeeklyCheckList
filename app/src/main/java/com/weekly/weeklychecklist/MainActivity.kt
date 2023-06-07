@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
@@ -36,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,11 +47,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.ChecklistWriteBoard
+import com.weekly.weeklychecklist.ui.CustomSnackBar
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.Red2
 import com.weekly.weeklychecklist.ui.theme.Red4
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
+import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,6 +73,11 @@ class MainActivity : ComponentActivity() {
 fun WeeklyChecklistApp(main: MainActivity) {
     val cornerSize = 7
     val boxHeight = LocalConfiguration.current.screenHeightDp.minus(50).dp
+    val clVM = viewModel<CheckListViewModel>()
+
+    val backgroundTouchEvent = {
+        clVM.isSwipe.value = false
+    }
 
     WeeklyCheckListTheme {
         //뒷 배경
@@ -75,13 +87,17 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 .background(
                     color = Red4,
                     shape = RoundedCornerShape(cornerSize, cornerSize, 0, 0)
-                ),
+                )
+                .clickable(interactionSource = MutableInteractionSource(), indication = null) {
+                    backgroundTouchEvent()
+                },
             contentAlignment = Alignment.BottomCenter
         )
         {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
+
                 //타이틀
                 Text(
                     modifier = Modifier.padding(20.dp),
@@ -109,35 +125,61 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 }
             }
             FloatingActions(main)
+
+            //빠르게 확인 누르면 추가 안되는 버그 있음
+            CustomSnackBar(
+                visible = clVM.isSwipe.value,
+                text = "삭제되었습니다",
+                //클릭 이벤트
+                onClick = {
+                    clVM.isSwipe.value = false
+                    val item = clVM.garbage.removeLast()
+                    clVM.checklist.add(item)
+                    Log.d("FFFFSize", "checklist size : ${clVM.checklist.size} // garbage size : ${clVM.garbage.size}")
+                },
+                //자동 종료
+                launchedEffect = {
+                    clVM.isSwipe.value = false
+                }
+            )
         }
     }
 }
 //투두 리스트
 @Composable
 fun ListTodo() {
-    val owner = LocalContext.current as MainActivity
-    val clVM = viewModel<CheckListViewModel>()
-    val cl = clVM.checkList
+    val clVM =viewModel<CheckListViewModel>()
+    val cl = remember { clVM.checklist }
+    val garbage = remember{ clVM.garbage }
     val du = 200
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
     ) {
-        //색인을 가진 리사이클러뷰
-        itemsIndexed(cl){ index, item ->
-//            AnimatedVisibility(
-//                visible = item.visibility.value,
-//                exit = fadeOut(animationSpec = TweenSpec(du, 200, FastOutLinearInEasing))
-//            ) {
-            ChecklistSwipable(text = item.checkListContent, done = item.done){
-                item.visibility.value = false
-//                    CoroutineScope(Dispatchers.Default).launch {
-//                        delay(du+200L)
-                    cl.removeAt(index)
-//                    }
-                Log.d("리스트 숫자", cl.size.toString())
+        //리사이클러뷰
+        itemsIndexed(
+            items = cl,
+            key = {
+                index: Int, item: CheckListInfo -> item.hashCode()
             }
-//            }
+        ){ x, item ->
+            //삭제 시 fadeOut 애니메이션
+            AnimatedVisibility(
+                visible = item.visibility.value,
+                exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
+            ) {
+                //체크리스트(스와이프) 정의
+                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility.value){
+                    item.visibility.value = !clVM.isSwipe.value
+                    CoroutineScope(Dispatchers.Default).launch {
+                        delay(du+300L)
+                        //스와이프 시 삭제
+                        cl.remove(item)
+                        garbage.add(item)
+                        clVM.isSwipe.value = true
+                    }
+                }
+            }
         }
     }
 }
@@ -182,7 +224,14 @@ fun FloatingActions(context: Context) {
         visible = isPressed,
         modifier = Modifier.height(350.dp),
         enter = slideIn(initialOffset = { IntOffset(0, halfHeight) }) + fadeIn(initialAlpha = 0f),
-        exit = slideOut(targetOffset = { IntOffset(0, halfHeight)}) + fadeOut(targetAlpha = 0f)
+        exit = slideOut(
+                    animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
+                    targetOffset = { IntOffset(0, halfHeight)}
+                ) +
+                fadeOut(
+                    animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
+                    targetAlpha = 0f
+                ) //속도 더 빠르
     ) {
         ChecklistWriteBoard(){
             isPressed = false

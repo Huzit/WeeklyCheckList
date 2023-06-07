@@ -1,8 +1,12 @@
 package com.weekly.weeklychecklist.ui
 
-import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +33,7 @@ import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FractionalThreshold
+import androidx.compose.material.Snackbar
 import androidx.compose.material.SnackbarDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
@@ -40,6 +45,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -52,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -65,9 +70,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.DayOfWeek
-import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
@@ -79,6 +83,7 @@ import com.weekly.weeklychecklist.ui.theme.SpotColor
 import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
+import kotlinx.coroutines.delay
 
 class ComposableComponent {
 }
@@ -157,20 +162,29 @@ fun ChecklistBox(
 fun ChecklistSwipable(
     text: String,
     done: Boolean,
-    removeEvent: () -> Unit
+    flag: Boolean,
+    dismissToDelete: () -> Unit,
 ) {
-    val swipeState = rememberDismissState(confirmStateChange = {
-        //dismiss 됐을 때 행동
-        if (it == DismissValue.DismissedToStart) {
-            Log.d("이거", "삭제됨")
-            removeEvent()
+    val dismissState = rememberDismissState(
+        initialValue = DismissValue.Default,
+        confirmStateChange = {
+            //Start로 dismiss시
+            if(it == DismissValue.DismissedToStart) {
+                //삭제이벤트
+                dismissToDelete()
+            }
+            true
         }
-        true
-    })
-    
+    )
+
+    if(flag){
+        LaunchedEffect(Unit){
+            dismissState.reset()
+        }
+    }
     SwipeToDismiss(
-        state = swipeState,
-        dismissThresholds = { FractionalThreshold(0.1f) },
+        state = dismissState,
+        dismissThresholds = { FractionalThreshold(0.5f) },
         //스와이프 방향(기본값 양측)
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
@@ -178,22 +192,21 @@ fun ChecklistSwipable(
             ChecklistBox(text = text, done = done)
         },
         background = {
-            val direction = swipeState.dismissDirection ?: return@SwipeToDismiss
             val color by animateColorAsState(
-                when (swipeState.targetValue) {
-                    DismissValue.Default -> SnackbarDefaults.backgroundColor.copy(alpha = 0.5f)
+                when (dismissState.targetValue) {
+                    DismissValue.Default -> Red1.copy()
                     DismissValue.DismissedToStart -> Red1.copy()
                     DismissValue.DismissedToEnd -> SnackbarDefaults.backgroundColor.copy(alpha = 0.5f)
                 }
             )
-            val icon = when (swipeState.targetValue) {
+            val icon = when (dismissState.targetValue) {
                 DismissValue.Default -> painterResource(id = R.drawable.delete)
                 DismissValue.DismissedToStart -> painterResource(id = R.drawable.delete)
                 DismissValue.DismissedToEnd -> painterResource(id = R.drawable.delete)
             }
             val scale by animateFloatAsState(
-                when (swipeState.targetValue == DismissValue.Default) {
-                    true -> 0.5f
+                when (dismissState.targetValue == DismissValue.Default) {
+                    true -> 1.0f
                     else -> 1.0f
                 }
             )
@@ -415,7 +428,7 @@ fun ChecklistWriteBoard(
 ) {
     lateinit var text: String
     lateinit var dayOfWeek: Set<DayOfWeek>
-    val clVM: CheckListViewModel = ViewModelProvider(LocalContext.current as MainActivity).get(CheckListViewModel::class.java)
+    val clVM = viewModel<CheckListViewModel>()
 
     Surface(
         modifier = Modifier
@@ -486,7 +499,7 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checkList.add(CheckListInfo(text, dayOfWeek))
+                            clVM.checklist.add(CheckListInfo(text, dayOfWeek))
                             buttonOnClick()
                         }
                     ) {
@@ -595,6 +608,40 @@ fun AddCheckListButton(onClick: () -> Unit){
     }
 }
 
+@Composable
+fun CustomSnackBar(visible: Boolean, text: String, onClick: () -> Unit, launchedEffect: () -> Unit){
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing)),
+        exit = fadeOut(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing))
+    ) {
+        Snackbar(
+            modifier = Modifier
+                .width(LocalConfiguration.current.screenWidthDp.minus(20).dp),
+            shape = RoundedCornerShape(percent = 30)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(text = text, color = Color.White)
+//                Spacer(modifier = Modifier.weight(1f))
+//                Button(
+//                    colors = ButtonDefaults.buttonColors(Color.Transparent),
+//                    onClick = onClick
+//                ) {
+////                Text(text = "확인", color = Color.White)
+//                }
+            }
+            LaunchedEffect(Unit){
+                delay(3500L)
+                launchedEffect()
+            }
+        }
+    }
+}
+
 //스위치 애니메이션 컴포저블
 @Composable
 private fun animateAlignmentAsState(
@@ -612,13 +659,15 @@ fun SwitchPreview() {
         AddCheckListButton(){}
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
-        ChecklistSwipable("test", true){}
         ChecklistWriteBoard(){}
+        CustomSnackBar(visible = true, text = "TestText", onClick = { /*TODO*/ }) {
+            
+        }
     }
 }
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun testPrevicew(){
+fun testPrevicew() {
     CustomAlertDialog(message = "초기화 ㄱ?", positiveEvent = { /*TODO*/ }, negativeEvent = {})
 }
