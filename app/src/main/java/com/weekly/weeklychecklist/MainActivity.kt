@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.TweenSpec
@@ -34,10 +35,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.ChecklistWriteBoard
 import com.weekly.weeklychecklist.ui.CustomSnackBar
@@ -60,11 +64,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    val clVM: CheckListViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             WeeklyChecklistApp(this)
         }
+        //DB init
+        CheckListDatabaseRepository.getInstance(this).initDatabase()
+        //get
+        clVM.checklist = CheckListDatabaseRepository
+            .getInstance(this)
+            .getDatabase()
+            .checkLists
+            .toMutableStateList()
     }
 }
 
@@ -125,7 +138,6 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 }
             }
             FloatingActions(main)
-
             //빠르게 확인 누르면 추가 안되는 버그 있음
             CustomSnackBar(
                 visible = clVM.isSwipe.value,
@@ -145,13 +157,14 @@ fun WeeklyChecklistApp(main: MainActivity) {
         }
     }
 }
-//투두 리스트
+//투두 리스트 리사이클러뷰
 @Composable
 fun ListTodo() {
     val clVM =viewModel<CheckListViewModel>()
     val cl = remember { clVM.checklist }
     val garbage = remember{ clVM.garbage }
     val du = 200
+    val context = LocalContext.current.applicationContext
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()

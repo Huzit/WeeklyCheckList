@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 
 class CheckListViewModel: ViewModel() {
-    val checklist = mutableStateListOf<CheckListInfo>()
+    var checklist = mutableStateListOf<CheckListInfo>()
     val garbage = mutableStateListOf<CheckListInfo>()
     val isSwipe = mutableStateOf(false)
 

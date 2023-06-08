@@ -3,6 +3,7 @@ package com.weekly.weeklychecklist.vm
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.weekly.weeklychecklist.DayOfWeek
+import kotlinx.coroutines.internal.SynchronizedObject
 
 data class CheckListInfo(
     //할 일

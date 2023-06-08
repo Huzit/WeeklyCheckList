@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
@@ -72,7 +73,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.DayOfWeek
+import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
+import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
 import com.weekly.weeklychecklist.ui.theme.Green
@@ -429,6 +432,7 @@ fun ChecklistWriteBoard(
     lateinit var text: String
     lateinit var dayOfWeek: Set<DayOfWeek>
     val clVM = viewModel<CheckListViewModel>()
+    val context = LocalContext.current as MainActivity
 
     Surface(
         modifier = Modifier
@@ -499,7 +503,6 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checklist.add(CheckListInfo(text, dayOfWeek))
                             buttonOnClick()
                         }
                     ) {
