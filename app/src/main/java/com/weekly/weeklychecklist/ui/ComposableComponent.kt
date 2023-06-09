@@ -431,8 +431,6 @@ fun ChecklistWriteBoard(
 ) {
     lateinit var text: String
     lateinit var dayOfWeek: Set<DayOfWeek>
-    val clVM = viewModel<CheckListViewModel>()
-    val context = LocalContext.current as MainActivity
 
     Surface(
         modifier = Modifier

@@ -71,13 +71,16 @@ class MainActivity : ComponentActivity() {
             WeeklyChecklistApp(this)
         }
         //DB init
-        CheckListDatabaseRepository.getInstance(this).initDatabase()
+        val db = CheckListDatabaseRepository.getInstance(this)
+        db.initDatabase()
         //get
-        clVM.checklist = CheckListDatabaseRepository
-            .getInstance(this)
-            .getDatabase()
-            .checkLists
-            .toMutableStateList()
+        if(db.getDatabase() != null) {
+            clVM.checklist = CheckListDatabaseRepository
+                .getInstance(this)
+                .getDatabase()
+                .checkLists
+                .toMutableStateList()
+        }
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import com.weekly.weeklychecklist.DayOfWeek
 import kotlinx.coroutines.internal.SynchronizedObject
+import java.io.Serializable
 
 data class CheckListInfo(
     //할 일
@@ -14,4 +15,4 @@ data class CheckListInfo(
     var done: Boolean = false,
     //애니메이션 visivle
     var visibility: MutableState<Boolean> = mutableStateOf(true)
-)
+): Serializable

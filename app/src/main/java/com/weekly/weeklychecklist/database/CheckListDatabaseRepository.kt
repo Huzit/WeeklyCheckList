@@ -7,11 +7,12 @@ import com.weekly.weeklychecklist.vm.CheckListInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.io.IOException
 
 class CheckListDatabaseRepository(private val context: Context) {
     private lateinit var db: CheckListDatabase
-    private val dao = db.checklistDao()
+    private lateinit var dao: CheckListDao
 
     companion object: SingletonHolder<CheckListDatabaseRepository, Context>(::CheckListDatabaseRepository)
     //초기화
@@ -21,15 +22,10 @@ class CheckListDatabaseRepository(private val context: Context) {
             CheckListDatabase::class.java,
             "checklist"
         ).build()
+        dao =  db.checklistDao()
     }
     //select
-    fun getDatabase(): CheckListEntity{
-        lateinit var _checkList: CheckListEntity
-        CoroutineScope(Dispatchers.IO).launch {
-            _checkList = dao.getCheckList()
-        }
-        return _checkList
-    }
+    fun getDatabase(): CheckListEntity = runBlocking { dao.getCheckList() }
     //insert & update
     fun updateDatabase(clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch{
         try {
