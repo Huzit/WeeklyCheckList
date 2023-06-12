@@ -9,6 +9,7 @@ import com.weekly.weeklychecklist.vm.CheckListInfo
 @Entity(tableName = "checklist")
 @TypeConverters(CheckListConverters::class)
 data class CheckListEntity(
+    @ColumnInfo(name = "list_name") var listName: String,
     @ColumnInfo(name = "checklist_info") var checkLists: List<CheckListInfo>
 ){
     @PrimaryKey(autoGenerate = true)

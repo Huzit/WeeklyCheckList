@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
+import java.lang.RuntimeException
 
 class CheckListDatabaseRepository(private val context: Context) {
     private lateinit var db: CheckListDatabase
@@ -24,15 +25,31 @@ class CheckListDatabaseRepository(private val context: Context) {
         ).build()
         dao =  db.checklistDao()
     }
+
+    fun insertDatabase(listName: String, clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch {
+        val a = dao.getCheckList(listName)
+        try{
+            //처음일 때만 insert
+            if(a == null){
+                dao.insertCheckList(CheckListEntity(listName, clInfo))
+            } else{
+                throw RuntimeException("이미 존재하는 테이블입니다.")
+            }
+        } catch (e: RuntimeException){
+            Log.e("WeeklyCheckList "+javaClass.simpleName, "이미 존재 하는 테이블 입니다.")
+        }
+    }
+
     //select
-    fun getDatabase(): CheckListEntity = runBlocking { dao.getCheckList() }
-    //insert & update
-    fun updateDatabase(clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch{
+    fun getDatabase(listName: String): CheckListEntity = runBlocking { dao.getCheckList(listName) }
+
+    //update
+    fun updateDatabase(listName: String, clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch{
         try {
-            val _checkList = dao.getCheckList()
+            val _checkList = dao.getCheckList(listName)
             //빈 경우
-            if(_checkList.checkLists.isEmpty()){
-                dao.insertCheckList(CheckListEntity(clInfo))
+            if(_checkList == null ){
+                insertDatabase(listName, clInfo)
             }
             //있을 경우
             else{
@@ -40,7 +57,7 @@ class CheckListDatabaseRepository(private val context: Context) {
                 dao.updateCheckList(_checkList)
             }
         }catch (e: IOException){
-            Log.e(javaClass.simpleName, "Database Update(Insert) is Failed")
+            Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")
         }
     }
     //delete
@@ -49,18 +66,6 @@ class CheckListDatabaseRepository(private val context: Context) {
             dao.deleteCheckList()
         }catch (e: IOException){
             Log.e(javaClass.simpleName, "Database Delete is Failed")
-        }
-    }
-    //sync
-    fun syncWithDB(clInfos: ArrayList<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch {
-        try{
-            val dbList = dao.getCheckList()
-            if(dbList.checkLists.isNotEmpty()) {
-                dbList.checkLists = clInfos
-                dao.updateCheckList(dbList)
-            }
-        }catch(e: IOException){
-            Log.e(javaClass.simpleName, "Synchronize is Failed")
         }
     }
 }

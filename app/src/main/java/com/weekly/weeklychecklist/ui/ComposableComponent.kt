@@ -1,5 +1,6 @@
 package com.weekly.weeklychecklist.ui
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -427,10 +428,13 @@ fun weekSelectButtonList(
 fun ChecklistWriteBoard(
     height: Dp = 350.dp,
     fontSize: TextUnit = 24.sp,
-    buttonOnClick: () -> Unit
+    main: Context,
+    buttonOnClick: () -> Unit,
 ) {
     lateinit var text: String
     lateinit var dayOfWeek: Set<DayOfWeek>
+    val clVM = viewModel<CheckListViewModel>()
+    val db = CheckListDatabaseRepository.getInstance(main)
 
     Surface(
         modifier = Modifier
@@ -501,6 +505,8 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
+                            clVM.checklist.add(CheckListInfo(text, dayOfWeek))
+                            db.updateDatabase(clVM.listName.value, clVM.checklist)
                             buttonOnClick()
                         }
                     ) {
@@ -655,14 +661,14 @@ private fun animateAlignmentAsState(
 @Preview(showBackground = false)
 @Composable
 fun SwitchPreview() {
+    val context = LocalContext.current as MainActivity
     Column {
         weekSelectButton(week = DayOfWeek.월)
         AddCheckListButton(){}
         CustomToggleButton(isCheck = true)
         CustomToggleButton(isCheck = false)
-        ChecklistWriteBoard(){}
+        ChecklistWriteBoard(main = context){}
         CustomSnackBar(visible = true, text = "TestText", onClick = { /*TODO*/ }) {
-            
         }
     }
 }

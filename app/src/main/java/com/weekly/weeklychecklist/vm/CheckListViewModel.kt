@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 
 class CheckListViewModel: ViewModel() {
     var checklist = mutableStateListOf<CheckListInfo>()
-    val garbage = mutableStateListOf<CheckListInfo>()
+    var listName = mutableStateOf<String>("default")
     val isSwipe = mutableStateOf(false)
 
     fun checklistToString(): String {
@@ -16,13 +16,4 @@ class CheckListViewModel: ViewModel() {
         }
         return sb.toString()
     }
-
-    fun garbageToString(): String{
-        val sb = StringBuilder()
-        garbage.forEach {
-            sb.append("$it ")
-        }
-        return sb.toString()
-    }
-
 }

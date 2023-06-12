@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
+import com.weekly.weeklychecklist.database.CheckListEntity
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.ChecklistWriteBoard
 import com.weekly.weeklychecklist.ui.CustomSnackBar
@@ -74,13 +74,22 @@ class MainActivity : ComponentActivity() {
         val db = CheckListDatabaseRepository.getInstance(this)
         db.initDatabase()
         //get
-        if(db.getDatabase() != null) {
-            clVM.checklist = CheckListDatabaseRepository
-                .getInstance(this)
-                .getDatabase()
-                .checkLists
-                .toMutableStateList()
+        if(db.getDatabase("default") != null) {
+//            clVM.checklist = db.getDatabase("default")//.checkLists
+            db.getDatabase("default")//.checkLists
+        } else{
+            db.insertDatabase(clVM.listName.value, clVM.checklist)
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
     }
 }
 
@@ -137,7 +146,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
                         .padding(top = 20.dp, start = 10.dp, end = 10.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    ListTodo()
+                    ListTodo(context = main)
                 }
             }
             FloatingActions(main)
@@ -148,9 +157,6 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 //클릭 이벤트
                 onClick = {
                     clVM.isSwipe.value = false
-                    val item = clVM.garbage.removeLast()
-                    clVM.checklist.add(item)
-                    Log.d("FFFFSize", "checklist size : ${clVM.checklist.size} // garbage size : ${clVM.garbage.size}")
                 },
                 //자동 종료
                 launchedEffect = {
@@ -162,12 +168,11 @@ fun WeeklyChecklistApp(main: MainActivity) {
 }
 //투두 리스트 리사이클러뷰
 @Composable
-fun ListTodo() {
+fun ListTodo(context: Context) {
     val clVM =viewModel<CheckListViewModel>()
     val cl = remember { clVM.checklist }
-    val garbage = remember{ clVM.garbage }
     val du = 200
-    val context = LocalContext.current.applicationContext
+    val db = CheckListDatabaseRepository.getInstance(context)
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -191,7 +196,8 @@ fun ListTodo() {
                         delay(du+300L)
                         //스와이프 시 삭제
                         cl.remove(item)
-                        garbage.add(item)
+                        //sync
+                        db.updateDatabase(clVM.listName.value, clVM.checklist)
                         clVM.isSwipe.value = true
                     }
                 }
@@ -249,7 +255,7 @@ fun FloatingActions(context: Context) {
                     targetAlpha = 0f
                 ) //속도 더 빠르
     ) {
-        ChecklistWriteBoard(){
+        ChecklistWriteBoard(main = context){
             isPressed = false
         }
     }
