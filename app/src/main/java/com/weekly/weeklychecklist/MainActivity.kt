@@ -186,12 +186,12 @@ fun ListTodo(context: Context) {
         ){ x, item ->
             //삭제 시 fadeOut 애니메이션
             AnimatedVisibility(
-                visible = item.visibility.value,
+                visible = item.visibility,
                 exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
             ) {
                 //체크리스트(스와이프) 정의
-                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility.value){
-                    item.visibility.value = !clVM.isSwipe.value
+                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility){
+                    item.visibility = !clVM.isSwipe.value
                     CoroutineScope(Dispatchers.Default).launch {
                         delay(du+300L)
                         //스와이프 시 삭제

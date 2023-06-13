@@ -16,16 +16,7 @@ data class CheckListInfo(
     //수행여부
     var done: Boolean = false,
     //애니메이션 visivle
-    var visibility: MutableState<Boolean> = mutableStateOf(true)
+    var visibility: Boolean = true
 )//: Serializable
 {
-    companion object {
-        fun fromJson(string: String?): List<CheckListInfo>? {
-            val listType = object: TypeToken<List<CheckListInfo>>(){}.type
-            if( string.isNullOrEmpty()){
-                return null
-            }
-            return GsonBuilder().create().fromJson(string, listType)
-        }
-    }
 }
