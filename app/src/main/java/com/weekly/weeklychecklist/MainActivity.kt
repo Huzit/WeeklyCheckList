@@ -2,7 +2,6 @@ package com.weekly.weeklychecklist
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -48,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
-import com.weekly.weeklychecklist.database.CheckListEntity
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.ChecklistWriteBoard
 import com.weekly.weeklychecklist.ui.CustomSnackBar
@@ -62,6 +60,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.lang.RuntimeException
+import java.util.Random
+import java.util.UUID
 
 class MainActivity : ComponentActivity() {
     val clVM: CheckListViewModel by viewModels()
@@ -75,11 +76,16 @@ class MainActivity : ComponentActivity() {
         db.initDatabase()
         //get
         if(db.getDatabase("default") != null) {
-//            clVM.checklist = db.getDatabase("default")//.checkLists
+            clVM.checklist = db.getDatabase("default").checkLists.toMutableStateList()
             db.getDatabase("default")//.checkLists
         } else{
             db.insertDatabase(clVM.listName.value, clVM.checklist)
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
     }
 
     override fun onStop() {
@@ -172,7 +178,6 @@ fun ListTodo(context: Context) {
     val clVM =viewModel<CheckListViewModel>()
     val cl = remember { clVM.checklist }
     val du = 200
-    val db = CheckListDatabaseRepository.getInstance(context)
 
     LazyColumn(
         modifier = Modifier.fillMaxWidth()
@@ -181,27 +186,30 @@ fun ListTodo(context: Context) {
         itemsIndexed(
             items = cl,
             key = {
-                index: Int, item: CheckListInfo -> item.hashCode()
+                    index: Int, item: CheckListInfo -> item.hashCode()
             }
         ){ x, item ->
+            var visible by remember { mutableStateOf(item.visibility) }
             //삭제 시 fadeOut 애니메이션
             AnimatedVisibility(
-                visible = item.visibility,
+                visible = visible,
                 exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
             ) {
                 //체크리스트(스와이프) 정의
-                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility){
+                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility, index = x){
+                    visible = !clVM.isSwipe.value
                     item.visibility = !clVM.isSwipe.value
                     CoroutineScope(Dispatchers.Default).launch {
                         delay(du+300L)
                         //스와이프 시 삭제
                         cl.remove(item)
-                        //sync
-                        db.updateDatabase(clVM.listName.value, clVM.checklist)
+//                        //sync
+//                        db.updateDatabase(clVM.listName.value, clVM.checklist)
                         clVM.isSwipe.value = true
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }

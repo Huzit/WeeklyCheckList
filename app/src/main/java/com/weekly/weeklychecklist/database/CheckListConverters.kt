@@ -16,8 +16,6 @@ class CheckListConverters {
     @TypeConverter
     fun jsonToList(value: String): List<CheckListInfo> {
         val listType = object: TypeToken<List<CheckListInfo>>(){}.type
-//        val gson = GsonBuilder().registerTypeAdapter(MutableState::class.java, MutableStateTypeAdapter<Any>())
-//            .create()
         val gson = Gson()
         return gson.fromJson(value, listType)
     }

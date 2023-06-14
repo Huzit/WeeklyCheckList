@@ -88,6 +88,7 @@ import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
+import java.lang.RuntimeException
 
 class ComposableComponent {
 }
@@ -97,8 +98,9 @@ class ComposableComponent {
 @Composable
 fun ChecklistBox(
     text: String,
-    done: Boolean
-) {
+    done: Boolean,
+    index: Int
+){
     val configuration = LocalConfiguration.current
 
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
@@ -155,7 +157,7 @@ fun ChecklistBox(
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
-            CustomToggleButton(isCheck = done)
+            CustomToggleButton(isCheck = done, index = index)
         }
     }
 }
@@ -167,6 +169,7 @@ fun ChecklistSwipable(
     text: String,
     done: Boolean,
     flag: Boolean,
+    index: Int,
     dismissToDelete: () -> Unit,
 ) {
     val dismissState = rememberDismissState(
@@ -193,7 +196,7 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            ChecklistBox(text = text, done = done)
+            ChecklistBox(text = text, done = done, index = index)
         },
         background = {
             val color by animateColorAsState(
@@ -239,16 +242,19 @@ fun ChecklistSwipable(
 //커스텀 스위치
 @Composable
 fun CustomToggleButton(
-    width: Dp = 95.dp,
-    height: Dp = 45.dp,
-    trackColor: Color = BorderColor,
-    gapBetweenThumbAndTrackEdge: Dp = 5.dp,
-    borderWidth: Dp = 1.dp,
-    cornerSize: Int = 50,
-    iConInnerPadding: Dp = 4.dp,
-    switchSize: Dp = 40.dp,
     isCheck: Boolean,
+    index: Int
 ) {
+    val width: Dp = 95.dp
+    val height: Dp = 45.dp
+    val trackColor: Color = BorderColor
+    val gapBetweenThumbAndTrackEdge: Dp = 5.dp
+    val borderWidth: Dp = 1.dp
+    val cornerSize: Int = 50
+    val iConInnerPadding: Dp = 4.dp
+    val switchSize: Dp = 40.dp
+
+    val clVM = viewModel<CheckListViewModel>()
     val interactionSource = remember { MutableInteractionSource() }
     var switchOn by remember { mutableStateOf(isCheck) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
@@ -271,6 +277,7 @@ fun CustomToggleButton(
                 interactionSource = interactionSource,
             ) {
                 switchOn = !switchOn
+                clVM.checklist[index].done = switchOn
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -665,8 +672,8 @@ fun SwitchPreview() {
     Column {
         weekSelectButton(week = DayOfWeek.월)
         AddCheckListButton(){}
-        CustomToggleButton(isCheck = true)
-        CustomToggleButton(isCheck = false)
+        CustomToggleButton(isCheck = true, 0)
+        CustomToggleButton(isCheck = false, 0)
         ChecklistWriteBoard(main = context){}
         CustomSnackBar(visible = true, text = "TestText", onClick = { /*TODO*/ }) {
         }
