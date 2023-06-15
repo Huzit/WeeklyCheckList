@@ -2,6 +2,7 @@ package com.weekly.weeklychecklist
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -33,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -186,29 +188,28 @@ fun ListTodo(context: Context) {
         itemsIndexed(
             items = cl,
             key = {
-                    index: Int, item: CheckListInfo -> item.hashCode()
+                    index: Int, item: CheckListInfo -> index + item.hashCode()
             }
         ){ x, item ->
             var visible by remember { mutableStateOf(item.visibility) }
             //삭제 시 fadeOut 애니메이션
-            AnimatedVisibility(
-                visible = visible,
-                exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
-            ) {
+//            AnimatedVisibility(
+//                visible = visible,
+//                exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
+//            ) {
+            val currentItem by rememberUpdatedState(newValue = item)
                 //체크리스트(스와이프) 정의
-                ChecklistSwipable(text = cl[x].checklistContent, done = cl[x].done, flag = item.visibility, index = x){
-                    visible = !clVM.isSwipe.value
-                    item.visibility = !clVM.isSwipe.value
+                ChecklistSwipable(text = currentItem.checklistContent, done = currentItem.done, flag = currentItem.visibility, index = x){
+//                    visible = !clVM.isSwipe.value
+                    //item.visibility = !clVM.isSwipe.value
                     CoroutineScope(Dispatchers.Default).launch {
-                        delay(du+300L)
+//                        delay(du+300L)
                         //스와이프 시 삭제
-                        cl.remove(item)
-//                        //sync
-//                        db.updateDatabase(clVM.listName.value, clVM.checklist)
+                        cl.remove(currentItem)
                         clVM.isSwipe.value = true
                     }
                 }
-            }
+//            }
             Spacer(modifier = Modifier.height(10.dp))
         }
     }

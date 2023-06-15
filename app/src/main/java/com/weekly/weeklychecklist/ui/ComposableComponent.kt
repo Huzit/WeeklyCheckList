@@ -88,7 +88,6 @@ import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
-import java.lang.RuntimeException
 
 class ComposableComponent {
 }
@@ -191,6 +190,7 @@ fun ChecklistSwipable(
     }
     SwipeToDismiss(
         state = dismissState,
+        modifier = Modifier,
         dismissThresholds = { FractionalThreshold(0.5f) },
         //스와이프 방향(기본값 양측)
         directions = setOf(DismissDirection.EndToStart),

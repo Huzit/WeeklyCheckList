@@ -9,6 +9,7 @@ import kotlinx.coroutines.internal.SynchronizedObject
 import java.io.Serializable
 
 data class CheckListInfo(
+
     //할 일
     var checklistContent: String,
     //초기화 요일
