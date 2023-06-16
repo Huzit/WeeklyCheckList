@@ -178,11 +178,13 @@ fun ChecklistSwipable(
             if(it == DismissValue.DismissedToStart) {
                 //삭제이벤트
                 dismissToDelete()
+                true
             }
-            true
+            else {
+                false
+            }
         }
     )
-
     if(flag){
         LaunchedEffect(Unit){
             dismissState.reset()
@@ -199,32 +201,16 @@ fun ChecklistSwipable(
             ChecklistBox(text = text, done = done, index = index)
         },
         background = {
-            val color by animateColorAsState(
-                when (dismissState.targetValue) {
-                    DismissValue.Default -> Red1.copy()
-                    DismissValue.DismissedToStart -> Red1.copy()
-                    DismissValue.DismissedToEnd -> SnackbarDefaults.backgroundColor.copy(alpha = 0.5f)
-                }
-            )
-            val icon = when (dismissState.targetValue) {
-                DismissValue.Default -> painterResource(id = R.drawable.delete)
-                DismissValue.DismissedToStart -> painterResource(id = R.drawable.delete)
-                DismissValue.DismissedToEnd -> painterResource(id = R.drawable.delete)
-            }
-            val scale by animateFloatAsState(
-                when (dismissState.targetValue == DismissValue.Default) {
-                    true -> 1.0f
-                    else -> 1.0f
-                }
-            )
-            val alignment = Alignment.CenterEnd
-            
+            val color by animateColorAsState(Red1.copy())
+            val icon = painterResource(id = R.drawable.delete)
+            val scale by animateFloatAsState(1.0f)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color, shape = RoundedCornerShape(percent = 20))
                     .padding(horizontal = 30.dp),
-                contentAlignment = alignment
+                contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
                     modifier = Modifier

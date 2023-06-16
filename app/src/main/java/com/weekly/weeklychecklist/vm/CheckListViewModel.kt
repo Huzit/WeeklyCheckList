@@ -9,6 +9,8 @@ class CheckListViewModel: ViewModel() {
     var listName = mutableStateOf<String>("default")
     val isSwipe = mutableStateOf(false)
 
+    val keys = ArrayList<Int>()
+
     fun checklistToString(): String {
         val sb = StringBuilder()
         checklist.forEach {

@@ -16,6 +16,7 @@ import androidx.compose.animation.slideOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -41,12 +42,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
@@ -62,7 +65,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.TestOnly
 import java.lang.RuntimeException
+import java.security.SecureRandom
 import java.util.Random
 import java.util.UUID
 
@@ -77,27 +82,30 @@ class MainActivity : ComponentActivity() {
         val db = CheckListDatabaseRepository.getInstance(this)
         db.initDatabase()
         //get
-        if(db.getDatabase("default") != null) {
+        if (db.getDatabase("default") != null) {
             clVM.checklist = db.getDatabase("default").checkLists.toMutableStateList()
             db.getDatabase("default")//.checkLists
-        } else{
+        } else {
             db.insertDatabase(clVM.listName.value, clVM.checklist)
         }
     }
 
     override fun onPause() {
         super.onPause()
-        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
+        CheckListDatabaseRepository.getInstance(this)
+            .updateDatabase(clVM.listName.value, clVM.checklist)
     }
 
     override fun onStop() {
         super.onStop()
-        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
+        CheckListDatabaseRepository.getInstance(this)
+            .updateDatabase(clVM.listName.value, clVM.checklist)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        CheckListDatabaseRepository.getInstance(this).updateDatabase(clVM.listName.value, clVM.checklist)
+        CheckListDatabaseRepository.getInstance(this)
+            .updateDatabase(clVM.listName.value, clVM.checklist)
     }
 }
 
@@ -139,9 +147,11 @@ fun WeeklyChecklistApp(main: MainActivity) {
                     fontSize = 20.sp,
                 )
                 //격자
-                Spacer( modifier = Modifier
-                    .size(1.dp)
-                    .weight(1f) )
+                Spacer(
+                    modifier = Modifier
+                        .size(1.dp)
+                        .weight(1f)
+                )
                 //메인 컨텐츠
                 Box(
                     modifier = Modifier
@@ -174,23 +184,31 @@ fun WeeklyChecklistApp(main: MainActivity) {
         }
     }
 }
+fun getRandomKey(clVM: CheckListViewModel): Int{
+    var k = SecureRandom().nextInt()
+    while(clVM.keys.contains(k))
+        k = SecureRandom().nextInt()
+    if(!clVM.keys.contains(k))
+        clVM.keys.add(k)
+    return k
+}
+
 //투두 리스트 리사이클러뷰
 @Composable
 fun ListTodo(context: Context) {
-    val clVM =viewModel<CheckListViewModel>()
-    val cl = remember { clVM.checklist }
+    val clVM = viewModel<CheckListViewModel>()
     val du = 200
 
     LazyColumn(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         //리사이클러뷰
         itemsIndexed(
-            items = cl,
-            key = {
-                    index: Int, item: CheckListInfo -> index + item.hashCode()
+            items = clVM.checklist,
+            key = { index: Int, item: CheckListInfo -> getRandomKey(clVM)
             }
-        ){ x, item ->
+        ) { x, item ->
             var visible by remember { mutableStateOf(item.visibility) }
             //삭제 시 fadeOut 애니메이션
 //            AnimatedVisibility(
@@ -198,19 +216,23 @@ fun ListTodo(context: Context) {
 //                exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
 //            ) {
             val currentItem by rememberUpdatedState(newValue = item)
-                //체크리스트(스와이프) 정의
-                ChecklistSwipable(text = currentItem.checklistContent, done = currentItem.done, flag = currentItem.visibility, index = x){
+            //체크리스트(스와이프) 정의
+            ChecklistSwipable(
+                text = currentItem.checklistContent,
+                done = currentItem.done,
+                flag = currentItem.visibility,
+                index = x
+            ) {
 //                    visible = !clVM.isSwipe.value
-                    //item.visibility = !clVM.isSwipe.value
-                    CoroutineScope(Dispatchers.Default).launch {
+                //item.visibility = !clVM.isSwipe.value
+//                CoroutineScope(Dispatchers.Default).launch {
 //                        delay(du+300L)
-                        //스와이프 시 삭제
-                        cl.remove(currentItem)
-                        clVM.isSwipe.value = true
-                    }
-                }
+                    //스와이프 시 삭제
+                    clVM.checklist.remove(currentItem)
+                    clVM.isSwipe.value = true
+//                }
+            }
 //            }
-            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -256,15 +278,15 @@ fun FloatingActions(context: Context) {
         modifier = Modifier.height(350.dp),
         enter = slideIn(initialOffset = { IntOffset(0, halfHeight) }) + fadeIn(initialAlpha = 0f),
         exit = slideOut(
-                    animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
-                    targetOffset = { IntOffset(0, halfHeight)}
-                ) +
+            animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
+            targetOffset = { IntOffset(0, halfHeight) }
+        ) +
                 fadeOut(
                     animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
                     targetAlpha = 0f
                 ) //속도 더 빠르
     ) {
-        ChecklistWriteBoard(main = context){
+        ChecklistWriteBoard(main = context) {
             isPressed = false
         }
     }
