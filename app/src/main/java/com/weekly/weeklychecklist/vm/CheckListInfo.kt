@@ -9,15 +9,14 @@ import kotlinx.coroutines.internal.SynchronizedObject
 import java.io.Serializable
 
 data class CheckListInfo(
-
+    //고유 ID
+    var id: Int,
     //할 일
     var checklistContent: String,
     //초기화 요일
     var restartWeek: Set<DayOfWeek>,
     //수행여부
     var done: Boolean = false,
-    //애니메이션 visivle
-    var visibility: Boolean = true
 )//: Serializable
 {
 }

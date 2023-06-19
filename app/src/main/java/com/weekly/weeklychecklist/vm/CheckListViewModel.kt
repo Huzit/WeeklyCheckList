@@ -5,17 +5,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 
 class CheckListViewModel: ViewModel() {
-    var checklist = mutableStateListOf<CheckListInfo>()
+    var checkList = mutableStateListOf<CheckListInfo>()
     var listName = mutableStateOf<String>("default")
+    //SnackBar 메시지 트리거
     val isSwipe = mutableStateOf(false)
-
-    val keys = ArrayList<Int>()
+    private var checkListId = checkList.size
 
     fun checklistToString(): String {
         val sb = StringBuilder()
-        checklist.forEach {
+        checkList.forEach {
             sb.append("$it ")
         }
         return sb.toString()
     }
+
+    fun getCheckListId(): Int = checkListId++
 }

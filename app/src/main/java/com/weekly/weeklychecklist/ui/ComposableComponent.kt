@@ -9,22 +9,12 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -35,7 +25,6 @@ import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.Snackbar
-import androidx.compose.material.SnackbarDefaults
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
 import androidx.compose.material.rememberDismissState
@@ -61,7 +50,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -77,14 +65,7 @@ import com.weekly.weeklychecklist.DayOfWeek
 import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
-import com.weekly.weeklychecklist.ui.theme.BorderColor
-import com.weekly.weeklychecklist.ui.theme.ClickedYellow
-import com.weekly.weeklychecklist.ui.theme.Green
-import com.weekly.weeklychecklist.ui.theme.Red
-import com.weekly.weeklychecklist.ui.theme.Red1
-import com.weekly.weeklychecklist.ui.theme.Red2
-import com.weekly.weeklychecklist.ui.theme.SpotColor
-import com.weekly.weeklychecklist.ui.theme.SuperLightGray
+import com.weekly.weeklychecklist.ui.theme.*
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
@@ -162,12 +143,12 @@ fun ChecklistBox(
 }
 
 //스와이프 삭제기능
-@OptIn(ExperimentalMaterialApi::class, ExperimentalTextApi::class)
+@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ChecklistSwipable(
+    modifier: Modifier,
     text: String,
     done: Boolean,
-    flag: Boolean,
     index: Int,
     dismissToDelete: () -> Unit,
 ) {
@@ -185,15 +166,10 @@ fun ChecklistSwipable(
             }
         }
     )
-    if(flag){
-        LaunchedEffect(Unit){
-            dismissState.reset()
-        }
-    }
     SwipeToDismiss(
         state = dismissState,
-        modifier = Modifier,
-        dismissThresholds = { FractionalThreshold(0.5f) },
+        modifier = modifier,
+        dismissThresholds = { FractionalThreshold(0.6f) },
         //스와이프 방향(기본값 양측)
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
@@ -263,7 +239,7 @@ fun CustomToggleButton(
                 interactionSource = interactionSource,
             ) {
                 switchOn = !switchOn
-                clVM.checklist[index].done = switchOn
+                clVM.checkList[index].done = switchOn
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -498,8 +474,8 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checklist.add(CheckListInfo(text, dayOfWeek))
-                            db.updateDatabase(clVM.listName.value, clVM.checklist)
+                            clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, dayOfWeek))
+                            db.updateDatabase(clVM.listName.value, clVM.checkList)
                             buttonOnClick()
                         }
                     ) {
@@ -609,7 +585,7 @@ fun AddCheckListButton(onClick: () -> Unit){
 }
 
 @Composable
-fun CustomSnackBar(visible: Boolean, text: String, onClick: () -> Unit, launchedEffect: () -> Unit){
+fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit){
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing)),
@@ -623,16 +599,8 @@ fun CustomSnackBar(visible: Boolean, text: String, onClick: () -> Unit, launched
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-//                horizontalArrangement = Arrangement.Center
             ) {
                 Text(text = text, color = Color.White)
-//                Spacer(modifier = Modifier.weight(1f))
-//                Button(
-//                    colors = ButtonDefaults.buttonColors(Color.Transparent),
-//                    onClick = onClick
-//                ) {
-////                Text(text = "확인", color = Color.White)
-//                }
             }
             LaunchedEffect(Unit){
                 delay(3500L)
@@ -661,7 +629,7 @@ fun SwitchPreview() {
         CustomToggleButton(isCheck = true, 0)
         CustomToggleButton(isCheck = false, 0)
         ChecklistWriteBoard(main = context){}
-        CustomSnackBar(visible = true, text = "TestText", onClick = { /*TODO*/ }) {
+        CustomSnackBar(visible = true, text = "TestText") {
         }
     }
 }

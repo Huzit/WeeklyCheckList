@@ -2,19 +2,21 @@ package com.weekly.weeklychecklist
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,30 +28,33 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.consumeAllChanges
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
@@ -59,17 +64,16 @@ import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.Red2
 import com.weekly.weeklychecklist.ui.theme.Red4
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
-import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import org.jetbrains.annotations.TestOnly
-import java.lang.RuntimeException
 import java.security.SecureRandom
-import java.util.Random
-import java.util.UUID
+import kotlin.math.absoluteValue
 
 class MainActivity : ComponentActivity() {
     val clVM: CheckListViewModel by viewModels()
@@ -83,29 +87,29 @@ class MainActivity : ComponentActivity() {
         db.initDatabase()
         //get
         if (db.getDatabase("default") != null) {
-            clVM.checklist = db.getDatabase("default").checkLists.toMutableStateList()
+            clVM.checkList = db.getDatabase("default").checkLists.toMutableStateList()
             db.getDatabase("default")//.checkLists
         } else {
-            db.insertDatabase(clVM.listName.value, clVM.checklist)
+            db.insertDatabase(clVM.listName.value, clVM.checkList)
         }
     }
 
     override fun onPause() {
         super.onPause()
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checklist)
+            .updateDatabase(clVM.listName.value, clVM.checkList)
     }
 
     override fun onStop() {
         super.onStop()
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checklist)
+            .updateDatabase(clVM.listName.value, clVM.checkList)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checklist)
+            .updateDatabase(clVM.listName.value, clVM.checkList)
     }
 }
 
@@ -168,14 +172,9 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 }
             }
             FloatingActions(main)
-            //빠르게 확인 누르면 추가 안되는 버그 있음
             CustomSnackBar(
                 visible = clVM.isSwipe.value,
                 text = "삭제되었습니다",
-                //클릭 이벤트
-                onClick = {
-                    clVM.isSwipe.value = false
-                },
                 //자동 종료
                 launchedEffect = {
                     clVM.isSwipe.value = false
@@ -184,55 +183,46 @@ fun WeeklyChecklistApp(main: MainActivity) {
         }
     }
 }
-fun getRandomKey(clVM: CheckListViewModel): Int{
-    var k = SecureRandom().nextInt()
-    while(clVM.keys.contains(k))
-        k = SecureRandom().nextInt()
-    if(!clVM.keys.contains(k))
-        clVM.keys.add(k)
-    return k
-}
 
+fun <T> MutableList<T>.move(fromIdx: Int, toIdx: Int){
+    if(toIdx > fromIdx)
+        for (i in fromIdx until toIdx)
+            this[i] = this[i + 1].also { this[i + 1] = this[i] }
+    else
+        for (i in fromIdx downTo  toIdx)
+            this[i] = this[i - 1].also { this[i - 1] = this[i] }
+
+}
 //투두 리스트 리사이클러뷰
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListTodo(context: Context) {
     val clVM = viewModel<CheckListViewModel>()
-    val du = 200
-
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         //리사이클러뷰
-        itemsIndexed(
-            items = clVM.checklist,
-            key = { index: Int, item: CheckListInfo -> getRandomKey(clVM)
-            }
-        ) { x, item ->
-            var visible by remember { mutableStateOf(item.visibility) }
-            //삭제 시 fadeOut 애니메이션
-//            AnimatedVisibility(
-//                visible = visible,
-//                exit = fadeOut(animationSpec = TweenSpec(du, 300, FastOutLinearInEasing))
-//            ) {
-            val currentItem by rememberUpdatedState(newValue = item)
+        items(
+            count = clVM.checkList.size,
+            key = { item: Int -> clVM.checkList[item].id },
+        ) { item ->
+            val currentItem by rememberUpdatedState(newValue = clVM.checkList[item])
             //체크리스트(스와이프) 정의
             ChecklistSwipable(
+                modifier = Modifier.animateItemPlacement(),
                 text = currentItem.checklistContent,
                 done = currentItem.done,
-                flag = currentItem.visibility,
-                index = x
+                index = item
             ) {
-//                    visible = !clVM.isSwipe.value
-                //item.visibility = !clVM.isSwipe.value
-//                CoroutineScope(Dispatchers.Default).launch {
-//                        delay(du+300L)
+                CoroutineScope(Dispatchers.Default).launch {
+                    //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                    delay(300L)
                     //스와이프 시 삭제
-                    clVM.checklist.remove(currentItem)
+                    clVM.checkList.remove(currentItem)
                     clVM.isSwipe.value = true
-//                }
+                }
             }
-//            }
         }
     }
 }
@@ -287,6 +277,7 @@ fun FloatingActions(context: Context) {
                 ) //속도 더 빠르
     ) {
         ChecklistWriteBoard(main = context) {
+            //확인 클릭 시
             isPressed = false
         }
     }
