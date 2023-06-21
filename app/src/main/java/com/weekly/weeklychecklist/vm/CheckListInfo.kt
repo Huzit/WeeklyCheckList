@@ -17,6 +17,6 @@ data class CheckListInfo(
     var restartWeek: Set<DayOfWeek>,
     //수행여부
     var done: Boolean = false,
-)//: Serializable
+)
 {
 }

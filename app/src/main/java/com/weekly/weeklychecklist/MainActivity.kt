@@ -1,14 +1,15 @@
 package com.weekly.weeklychecklist
 
 import android.content.Context
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
@@ -16,7 +17,6 @@ import androidx.compose.animation.slideOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,26 +28,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.consumeAllChanges
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,18 +62,17 @@ import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import java.security.SecureRandom
-import kotlin.math.absoluteValue
+import java.time.LocalDate
 
+@RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
     val clVM: CheckListViewModel by viewModels()
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            clVM.initContext(this)
             WeeklyChecklistApp(this)
         }
         //DB init
@@ -88,32 +81,35 @@ class MainActivity : ComponentActivity() {
         //get
         if (db.getDatabase("default") != null) {
             clVM.checkList = db.getDatabase("default").checkLists.toMutableStateList()
+            clVM.isUpdated = db.getDatabase("default").isUpdated ?: false
+            clVM.lastUpdatedDate = db.getDatabase("default").lastUpdatedDate ?: LocalDate.now()
+            clVM.switchInitialization()
             db.getDatabase("default")//.checkLists
-        } else {
-            db.insertDatabase(clVM.listName.value, clVM.checkList)
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checkList)
-    }
+//    override fun onPause() {
+//        super.onPause()
+//        CheckListDatabaseRepository.getInstance(this)
+//            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+//    }
 
     override fun onStop() {
         super.onStop()
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checkList)
+            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
     }
+
 
     override fun onDestroy() {
         super.onDestroy()
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checkList)
+            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
     }
 }
 
 //앱 전체 컴포저블
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WeeklyChecklistApp(main: MainActivity) {
     val cornerSize = 7
@@ -183,17 +179,8 @@ fun WeeklyChecklistApp(main: MainActivity) {
         }
     }
 }
-
-fun <T> MutableList<T>.move(fromIdx: Int, toIdx: Int){
-    if(toIdx > fromIdx)
-        for (i in fromIdx until toIdx)
-            this[i] = this[i + 1].also { this[i + 1] = this[i] }
-    else
-        for (i in fromIdx downTo  toIdx)
-            this[i] = this[i - 1].also { this[i - 1] = this[i] }
-
-}
 //투두 리스트 리사이클러뷰
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListTodo(context: Context) {
@@ -228,6 +215,7 @@ fun ListTodo(context: Context) {
 }
 
 //플로팅 버튼
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FloatingActions(context: Context) {
     var isPressed by remember { mutableStateOf(false) }
@@ -283,6 +271,7 @@ fun FloatingActions(context: Context) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun Greeting() {

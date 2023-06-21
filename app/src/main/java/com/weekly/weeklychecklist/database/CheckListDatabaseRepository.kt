@@ -1,7 +1,9 @@
 package com.weekly.weeklychecklist.database
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.room.Room
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import kotlinx.coroutines.CoroutineScope
@@ -10,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
 import java.lang.RuntimeException
+import java.time.LocalDate
 
 class CheckListDatabaseRepository(private val context: Context) {
     private lateinit var db: CheckListDatabase
@@ -26,15 +29,15 @@ class CheckListDatabaseRepository(private val context: Context) {
         dao =  db.checklistDao()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     fun insertDatabase(listName: String, clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch {
-        val a = dao.getCheckList(listName)
         try{
-            //처음일 때만 insert
-            if(a == null){
-                dao.insertCheckList(CheckListEntity(listName, clInfo))
-            } else{
-                throw RuntimeException("이미 존재하는 테이블입니다.")
-            }
+//            처음일 때만 insert
+//            if(a == null){
+                dao.insertCheckList(CheckListEntity(listName, clInfo, false, LocalDate.now()))
+//            } else{
+//                throw RuntimeException("이미 존재하는 테이블입니다.")
+//            }
         } catch (e: RuntimeException){
             Log.e("WeeklyCheckList "+javaClass.simpleName, "이미 존재 하는 테이블 입니다.")
         }
@@ -44,17 +47,20 @@ class CheckListDatabaseRepository(private val context: Context) {
     fun getDatabase(listName: String): CheckListEntity = runBlocking { dao.getCheckList(listName) }
 
     //update
-    fun updateDatabase(listName: String, clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch{
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun updateDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch{
         try {
-            val _checkList = dao.getCheckList(listName)
+            val checkList = dao.getCheckList(listName)
             //빈 경우
-            if(_checkList == null ){
+            if(checkList == null ){
                 insertDatabase(listName, clInfo)
             }
             //있을 경우
             else{
-                _checkList.checkLists = clInfo
-                dao.updateCheckList(_checkList)
+                checkList.checkLists = clInfo
+                checkList.lastUpdatedDate = lastUpdatedDate
+                checkList.isUpdated = isUpdated
+                dao.updateCheckList(checkList)
             }
         }catch (e: IOException){
             Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")

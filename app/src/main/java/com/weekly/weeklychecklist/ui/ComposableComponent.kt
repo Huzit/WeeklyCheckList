@@ -1,6 +1,8 @@
 package com.weekly.weeklychecklist.ui
 
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -82,7 +84,6 @@ fun ChecklistBox(
     index: Int
 ){
     val configuration = LocalConfiguration.current
-
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
     val backgroundHeight: Dp = 72.dp
     val width = configuration.screenWidthDp.minus(160).dp
@@ -393,6 +394,7 @@ fun weekSelectButtonList(
 }
 
 //체크리스트 입력 보드
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChecklistWriteBoard(
     height: Dp = 350.dp,
@@ -475,7 +477,8 @@ fun ChecklistWriteBoard(
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
                             clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, dayOfWeek))
-                            db.updateDatabase(clVM.listName.value, clVM.checkList)
+                            clVM.isUpdated = false
+                            db.updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
                             buttonOnClick()
                         }
                     ) {
