@@ -3,6 +3,7 @@ package com.weekly.weeklychecklist
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -67,7 +68,7 @@ import java.time.LocalDate
 
 @RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
-    val clVM: CheckListViewModel by viewModels()
+    private val clVM: CheckListViewModel by viewModels()
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,16 +84,11 @@ class MainActivity : ComponentActivity() {
             clVM.checkList = db.getDatabase("default").checkLists.toMutableStateList()
             clVM.isUpdated = db.getDatabase("default").isUpdated ?: false
             clVM.lastUpdatedDate = db.getDatabase("default").lastUpdatedDate ?: LocalDate.now()
-            clVM.switchInitialization()
-            db.getDatabase("default")//.checkLists
+//            clVM.switchInitialization()
+            db.getDatabase("default")
         }
-    }
 
-//    override fun onPause() {
-//        super.onPause()
-//        CheckListDatabaseRepository.getInstance(this)
-//            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
-//    }
+    }
 
     override fun onStop() {
         super.onStop()

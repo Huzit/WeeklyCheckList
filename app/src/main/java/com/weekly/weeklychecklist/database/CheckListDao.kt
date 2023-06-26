@@ -10,7 +10,7 @@ import com.weekly.weeklychecklist.vm.CheckListInfo
 @Dao
 interface CheckListDao {
     @Insert
-    suspend fun insertCheckList(vararg checkListInfo: CheckListEntity)
+    suspend fun insertCheckList(vararg checkListEntity: CheckListEntity)
 
     @Query("SELECT * FROM checklist WHERE list_name = :listName ")
     suspend fun getCheckList(vararg listName: String): CheckListEntity
@@ -19,5 +19,5 @@ interface CheckListDao {
     suspend fun deleteCheckList(vararg listName: String)
 
     @Update
-    suspend fun updateCheckList(vararg checkList: CheckListEntity)
+    suspend fun updateCheckList(vararg checkListEntity: CheckListEntity)
 }

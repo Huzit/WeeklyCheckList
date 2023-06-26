@@ -29,6 +29,7 @@ import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.Snackbar
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.Switch
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,7 +64,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.weekly.weeklychecklist.DayOfWeek
+import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
@@ -71,6 +72,7 @@ import com.weekly.weeklychecklist.ui.theme.*
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
+import java.time.LocalDate
 
 class ComposableComponent {
 }
@@ -316,10 +318,10 @@ fun customTextField(
 //요일 선택 버튼
 @Composable
 fun weekSelectButton(
-    week: DayOfWeek,
+    week: MyDayOfWeek,
     size: Dp = 35.dp,
     fontSize: TextUnit = 15.sp
-): DayOfWeek{
+): MyDayOfWeek{
     val weekText by remember{ mutableStateOf(week.name) }
     var backgroundColor by remember { mutableStateOf(Color.Transparent) }
     var isClicked by remember { mutableStateOf(false) }
@@ -352,49 +354,35 @@ fun weekSelectButton(
         )
     }
     return when(week){
-        DayOfWeek.월 -> {if(isClicked) DayOfWeek.월 else DayOfWeek.널}
-        DayOfWeek.화 -> {if(isClicked) DayOfWeek.화 else DayOfWeek.널}
-        DayOfWeek.수 -> {if(isClicked) DayOfWeek.수 else DayOfWeek.널}
-        DayOfWeek.목 -> {if(isClicked) DayOfWeek.목 else DayOfWeek.널}
-        DayOfWeek.금 -> {if(isClicked) DayOfWeek.금 else DayOfWeek.널}
-        DayOfWeek.토 -> {if(isClicked) DayOfWeek.토 else DayOfWeek.널}
-        DayOfWeek.일 -> {if(isClicked) DayOfWeek.일 else DayOfWeek.널}
-        DayOfWeek.널 -> {DayOfWeek.널}
+        MyDayOfWeek.월 -> {if(isClicked) MyDayOfWeek.월 else MyDayOfWeek.널}
+        MyDayOfWeek.화 -> {if(isClicked) MyDayOfWeek.화 else MyDayOfWeek.널}
+        MyDayOfWeek.수 -> {if(isClicked) MyDayOfWeek.수 else MyDayOfWeek.널}
+        MyDayOfWeek.목 -> {if(isClicked) MyDayOfWeek.목 else MyDayOfWeek.널}
+        MyDayOfWeek.금 -> {if(isClicked) MyDayOfWeek.금 else MyDayOfWeek.널}
+        MyDayOfWeek.토 -> {if(isClicked) MyDayOfWeek.토 else MyDayOfWeek.널}
+        MyDayOfWeek.일 -> {if(isClicked) MyDayOfWeek.일 else MyDayOfWeek.널}
+        MyDayOfWeek.널 -> {MyDayOfWeek.널}
     }
 }
 //요일 선택버튼 레이어
 //버튼 누를 때 마다 리컴포지션이 일어남
 @Composable
 fun weekSelectButtonList(
-    space: Dp = 10.dp
-): Set<DayOfWeek> {
-    val weekSet = arrayListOf<DayOfWeek>()
-    Row{
-        weekSet.add(weekSelectButton(DayOfWeek.월))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.화))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.수))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.목))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.금))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.토))
-        Spacer(modifier = Modifier.size(space))
-
-        weekSet.add(weekSelectButton(DayOfWeek.일))
+): Set<MyDayOfWeek> {
+    val weekSet = arrayListOf<MyDayOfWeek>()
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)){
+        weekSet.add(weekSelectButton(MyDayOfWeek.월))
+        weekSet.add(weekSelectButton(MyDayOfWeek.화))
+        weekSet.add(weekSelectButton(MyDayOfWeek.수))
+        weekSet.add(weekSelectButton(MyDayOfWeek.목))
+        weekSet.add(weekSelectButton(MyDayOfWeek.금))
+        weekSet.add(weekSelectButton(MyDayOfWeek.토))
+        weekSet.add(weekSelectButton(MyDayOfWeek.일))
     }
-    return weekSet.filter { it != DayOfWeek.널 }.toSet()
+    return weekSet.filter { it != MyDayOfWeek.널 }.toSet()
 }
 
 //체크리스트 입력 보드
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ChecklistWriteBoard(
     height: Dp = 350.dp,
@@ -403,7 +391,7 @@ fun ChecklistWriteBoard(
     buttonOnClick: () -> Unit,
 ) {
     lateinit var text: String
-    lateinit var dayOfWeek: Set<DayOfWeek>
+    lateinit var myDayOfWeek: Set<MyDayOfWeek>
     val clVM = viewModel<CheckListViewModel>()
     val db = CheckListDatabaseRepository.getInstance(main)
 
@@ -463,10 +451,8 @@ fun ChecklistWriteBoard(
                         fontWeight = FontWeight.Bold
                     )
                     CustomSpacer(height = 20.dp)
-
                     //요일 입력 버튼
-                    dayOfWeek = weekSelectButtonList()
-
+                    myDayOfWeek = weekSelectButtonList()
                     CustomSpacer(height = 20.dp)
                     //확인 버튼
                     Button(
@@ -476,8 +462,9 @@ fun ChecklistWriteBoard(
                         ,
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, dayOfWeek))
+                            clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, myDayOfWeek))
                             clVM.isUpdated = false
+                            clVM.lastUpdatedDate = LocalDate.now()
                             db.updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
                             buttonOnClick()
                         }
@@ -622,12 +609,13 @@ private fun animateAlignmentAsState(
     return remember { derivedStateOf { BiasAlignment(horizontalBias = bias, verticalBias = 0f) } }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(showBackground = false)
 @Composable
 fun SwitchPreview() {
-    val context = LocalContext.current as MainActivity
+    val context = LocalContext.current
     Column {
-        weekSelectButton(week = DayOfWeek.월)
+        weekSelectButton(week = MyDayOfWeek.월)
         AddCheckListButton(){}
         CustomToggleButton(isCheck = true, 0)
         CustomToggleButton(isCheck = false, 0)

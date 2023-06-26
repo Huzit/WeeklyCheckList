@@ -1,19 +1,17 @@
 package com.weekly.weeklychecklist.vm
 
-import android.app.AlarmManager
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import java.lang.RuntimeException
+import java.time.DayOfWeek
 import java.time.LocalDate
-import kotlin.properties.Delegates
-import com.weekly.weeklychecklist.DayOfWeek as myDayOfWeek
+import com.weekly.weeklychecklist.MyDayOfWeek
 import java.time.DayOfWeek as javaDayOfWeek
 
-@RequiresApi(Build.VERSION_CODES.O)
 class CheckListViewModel(): ViewModel() {
     var checkList = mutableStateListOf<CheckListInfo>()
     var listName = mutableStateOf<String>("default")
@@ -41,44 +39,89 @@ class CheckListViewModel(): ViewModel() {
     }
 
     //요일마다 스위치 초기화
-    @RequiresApi(Build.VERSION_CODES.O)
     fun switchInitialization(){
         //오늘의 요일
-        var today = when(LocalDate.now().dayOfWeek){
-            javaDayOfWeek.MONDAY -> myDayOfWeek.월
-            javaDayOfWeek.TUESDAY -> myDayOfWeek.화
-            javaDayOfWeek.WEDNESDAY -> myDayOfWeek.수
-            javaDayOfWeek.THURSDAY -> myDayOfWeek.목
-            javaDayOfWeek.FRIDAY -> myDayOfWeek.금
-            javaDayOfWeek.SATURDAY -> myDayOfWeek.토
-            javaDayOfWeek.SUNDAY -> myDayOfWeek.일
-            else -> myDayOfWeek.널
+        val today = when(LocalDate.now().dayOfWeek){
+            javaDayOfWeek.MONDAY -> MyDayOfWeek.월
+            javaDayOfWeek.TUESDAY -> MyDayOfWeek.화
+            javaDayOfWeek.WEDNESDAY -> MyDayOfWeek.수
+            javaDayOfWeek.THURSDAY -> MyDayOfWeek.목
+            javaDayOfWeek.FRIDAY -> MyDayOfWeek.금
+            javaDayOfWeek.SATURDAY -> MyDayOfWeek.토
+            javaDayOfWeek.SUNDAY -> MyDayOfWeek.일
+            else -> MyDayOfWeek.널
         }
-
-        checkList.forEachIndexed { index, item ->
-            //조건1. 요일이 같으면 초기화
-            if(item.restartWeek.contains(today) && !isUpdated) {
+        if(lastUpdatedDate == null){
+            throw RuntimeException("환아 날짜가 없다")
+        }
+        val passedWeek = getBetweenWeek(lastUpdatedDate)
+        //일주일 이상 지났을 시 전체 초기화
+        if(passedWeek.size >= 7){
+            checkList.forEach { item ->
                 item.done = false
-                //마지막까지 초기화 했을 시
-                if(index == checkList.size - 1)
-                    isUpdated = true
             }
-            //조건2. 요일이 아닐 때
-            else{
-                getBetweenWeek(lastUpdatedDate)
+            lastUpdatedDate = LocalDate.now()
+            return
+        }
+        //최근 접속일 이 일주일 미만일 시
+        else {
+            checkList.forEachIndexed { index, item ->
+                //조건1. 같은 요일
+                if (item.restartWeek.contains(today) && !isUpdated) {
+                    item.done = false
+                }
+                //조건2. 다른 요일
+                else {
+                    item.restartWeek.forEach { week ->
+                        if (passedWeek.contains(week)) {
+                            item.done = false
+                        }
+                    }
+                }
+                //마지막 일 시
+                if (index == checkList.size - 1) {
+                    isUpdated = true
+                    lastUpdatedDate = LocalDate.now()
+                    return
+                }
             }
         }
     }
-
-    fun getBetweenWeek(lastUpdatedDate: LocalDate): Set<String>{
+    //오늘 ~ 이전 이전 업데이트 날짜 사이의 요일 구하기
+    private fun getBetweenWeek(lastUpdatedDate: LocalDate): Set<MyDayOfWeek>{
         val today = LocalDate.now().toString()
-        val baseDay = lastUpdatedDate
-        val weeks = arrayListOf<String>()
-        //lud ~ today 까지의 요일 리턴
-        while(baseDay.toString() != today){
-            weeks.add(baseDay.dayOfWeek.toString())
-            baseDay.plusDays(1)
+        var mLastUpdatedDate = lastUpdatedDate
+        val weeks = arrayListOf<DayOfWeek>()
+        val reWeeks = arrayListOf<MyDayOfWeek>()
+        //마지막 앱 시작 날짜 부터 오늘 까지 요일 리턴 또는 일주일 지났을 경우
+        while(mLastUpdatedDate.toString() != today || weeks.size > 7){
+            weeks.add(mLastUpdatedDate.dayOfWeek)
+            mLastUpdatedDate = mLastUpdatedDate.plusDays(1)
         }
-        return weeks.toSet()
+        weeks.forEach { week ->
+            reWeeks.add(convertDayOfWeekToMyDayOfWeek(week))
+        }
+        return reWeeks.toSet()
+    }
+    //java.time.DayOfWeek 를 MyDayOfWeek로 변경
+    fun convertDayOfWeekToMyDayOfWeek(weeks: DayOfWeek) = when(weeks){
+        DayOfWeek.MONDAY    -> MyDayOfWeek.월
+        DayOfWeek.TUESDAY   -> MyDayOfWeek.화
+        DayOfWeek.WEDNESDAY -> MyDayOfWeek.수
+        DayOfWeek.THURSDAY  -> MyDayOfWeek.목
+        DayOfWeek.FRIDAY    -> MyDayOfWeek.금
+        DayOfWeek.SATURDAY  -> MyDayOfWeek.토
+        DayOfWeek.SUNDAY    -> MyDayOfWeek.일
+    }
+
+    fun convertMyDayOfWeekToDayOfWeek(weeks: MyDayOfWeek) = when(weeks){
+        MyDayOfWeek.월  -> DayOfWeek.MONDAY
+        MyDayOfWeek.화  -> DayOfWeek.TUESDAY
+        MyDayOfWeek.수  -> DayOfWeek.WEDNESDAY
+        MyDayOfWeek.목  -> DayOfWeek.THURSDAY
+        MyDayOfWeek.금  -> DayOfWeek.FRIDAY
+        MyDayOfWeek.토  -> DayOfWeek.SATURDAY
+        MyDayOfWeek.일  -> DayOfWeek.SUNDAY
+        else -> ""
     }
 }
