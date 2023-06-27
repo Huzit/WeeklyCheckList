@@ -19,6 +19,8 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -28,6 +30,8 @@ android {
         }
     }
     compileOptions {
+        coreLibraryDesugaringEnabled true
+
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -81,4 +85,6 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
 
     implementation 'com.google.code.gson:gson:2.9.0'
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
 }

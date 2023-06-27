@@ -66,46 +66,55 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
-@RequiresApi(Build.VERSION_CODES.O)
+
 class MainActivity : ComponentActivity() {
     private val clVM: CheckListViewModel by viewModels()
-    @RequiresApi(Build.VERSION_CODES.O)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            clVM.initContext(this)
             WeeklyChecklistApp(this)
         }
         //DB init
         val db = CheckListDatabaseRepository.getInstance(this)
         db.initDatabase()
-        //get
-        if (db.getDatabase("default") != null) {
-            clVM.checkList = db.getDatabase("default").checkLists.toMutableStateList()
-            clVM.isUpdated = db.getDatabase("default").isUpdated ?: false
-            clVM.lastUpdatedDate = db.getDatabase("default").lastUpdatedDate ?: LocalDate.now()
-//            clVM.switchInitialization()
-            db.getDatabase("default")
-        }
+        val default = db.getDatabase("default")
 
+        //get
+        if (default != null) {
+            clVM.apply{
+                checkList = default.checkLists.toMutableStateList()
+                isUpdated = default.isUpdated ?: false
+                lastUpdatedDate = default.lastUpdatedDate
+
+                if(checkList.size == 0)
+                    setCheckListId(0)
+                else
+                    setCheckListId(checkList.size)
+            }
+        }
+    }
+
+    override fun onResume() {
+        clVM.switchInitialization()
+        super.onResume()
     }
 
     override fun onStop() {
-        super.onStop()
         CheckListDatabaseRepository.getInstance(this)
             .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+        super.onStop()
     }
 
 
     override fun onDestroy() {
-        super.onDestroy()
         CheckListDatabaseRepository.getInstance(this)
             .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+        super.onDestroy()
     }
 }
 
 //앱 전체 컴포저블
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun WeeklyChecklistApp(main: MainActivity) {
     val cornerSize = 7
@@ -138,7 +147,7 @@ fun WeeklyChecklistApp(main: MainActivity) {
                 //타이틀
                 Text(
                     modifier = Modifier.padding(20.dp),
-                    text = "나만의 계획표",
+                    text = "",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                 )
@@ -176,7 +185,6 @@ fun WeeklyChecklistApp(main: MainActivity) {
     }
 }
 //투두 리스트 리사이클러뷰
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ListTodo(context: Context) {
@@ -194,8 +202,7 @@ fun ListTodo(context: Context) {
             //체크리스트(스와이프) 정의
             ChecklistSwipable(
                 modifier = Modifier.animateItemPlacement(),
-                text = currentItem.checklistContent,
-                done = currentItem.done,
+                item = clVM.checkList[item],
                 index = item
             ) {
                 CoroutineScope(Dispatchers.Default).launch {
@@ -211,7 +218,6 @@ fun ListTodo(context: Context) {
 }
 
 //플로팅 버튼
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun FloatingActions(context: Context) {
     var isPressed by remember { mutableStateOf(false) }
@@ -267,7 +273,7 @@ fun FloatingActions(context: Context) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun Greeting() {

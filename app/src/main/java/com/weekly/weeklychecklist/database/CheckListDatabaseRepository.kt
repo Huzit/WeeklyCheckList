@@ -1,9 +1,7 @@
 package com.weekly.weeklychecklist.database
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.room.Room
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import kotlinx.coroutines.CoroutineScope
@@ -11,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.IOException
-import java.lang.RuntimeException
 import java.time.LocalDate
 
 class CheckListDatabaseRepository(private val context: Context) {
@@ -29,10 +26,10 @@ class CheckListDatabaseRepository(private val context: Context) {
         dao =  db.checklistDao()
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun insertDatabase(listName: String, clInfo: List<CheckListInfo>) = CoroutineScope(Dispatchers.IO).launch {
+    
+    fun insertDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch {
         try{
-            dao.insertCheckList(CheckListEntity(listName, clInfo, false, LocalDate.now()))
+            dao.insertCheckList(CheckListEntity(listName, clInfo, isUpdated, lastUpdatedDate))
         } catch (e: RuntimeException){
             Log.e("WeeklyCheckList "+javaClass.simpleName, "이미 존재 하는 테이블 입니다.")
         }
@@ -42,13 +39,13 @@ class CheckListDatabaseRepository(private val context: Context) {
     fun getDatabase(listName: String): CheckListEntity = runBlocking { dao.getCheckList(listName) }
 
     //update
-    @RequiresApi(Build.VERSION_CODES.O)
+    
     fun updateDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch{
         try {
             val checkList = dao.getCheckList(listName)
             //빈 경우
             if(checkList == null ){
-                insertDatabase(listName, clInfo)
+                insertDatabase(listName, clInfo, isUpdated, lastUpdatedDate)
             }
             //있을 경우
             else{

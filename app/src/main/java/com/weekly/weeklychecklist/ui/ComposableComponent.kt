@@ -2,6 +2,7 @@ package com.weekly.weeklychecklist.ui
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -29,7 +30,6 @@ import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.Snackbar
 import androidx.compose.material.Surface
 import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.Switch
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -65,7 +66,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
-import com.weekly.weeklychecklist.MainActivity
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.theme.*
@@ -80,9 +80,8 @@ class ComposableComponent {
 
 //체크리스트 항목
 @Composable
-fun ChecklistBox(
-    text: String,
-    done: Boolean,
+fun CheckListBox(
+    item: CheckListInfo,
     index: Int
 ){
     val configuration = LocalConfiguration.current
@@ -97,7 +96,6 @@ fun ChecklistBox(
         color = Color.White,
         shape = RoundedCornerShape(cornerSize),
         border = BorderStroke(1.dp, color = SuperLightGray)
-//        elevation = 10.dp,
     ) {
         Row(
             modifier = Modifier
@@ -131,7 +129,7 @@ fun ChecklistBox(
                 ) {
                     Text(
                         modifier = Modifier.padding(start = 10.dp, end = 10.dp),
-                        text = text,
+                        text = item.checklistContent,
                         fontSize = 18.sp,
                         maxLines = 1,
                         fontWeight = FontWeight.Bold,
@@ -140,7 +138,29 @@ fun ChecklistBox(
                 }
             }
             Spacer(modifier = Modifier.weight(1f))
-            CustomToggleButton(isCheck = done, index = index)
+            
+            val fs = dpToSp(dp = 10.dp)
+            val weeks = item.restartWeek.toString().filter { it != ' ' && it != '[' && it != ']' }.split(",")
+            val result = StringBuilder()
+            var resultWeeks = ""
+            //sort
+            val mydayOfWeek =listOf<String>("월", "화", "수", "목", "금", "토", "일")
+            mydayOfWeek.forEachIndexed {index, week ->
+                if(weeks.contains(week))
+                    result.append("$week ")
+            }
+            resultWeeks = result.deleteCharAt(result.lastIndex).toString()
+            if(resultWeeks == "월 화 수 목 금 토 일")
+                resultWeeks = "매일"
+
+            Column() {
+                Text(
+                    text = resultWeeks,
+                    fontSize = fs,
+                    modifier = Modifier.padding(start = 7.dp)
+                )
+                CustomToggleButton(isCheck = item.done, index = index)
+            }
         }
     }
 }
@@ -150,8 +170,7 @@ fun ChecklistBox(
 @Composable
 fun ChecklistSwipable(
     modifier: Modifier,
-    text: String,
-    done: Boolean,
+    item: CheckListInfo,
     index: Int,
     dismissToDelete: () -> Unit,
 ) {
@@ -177,7 +196,7 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            ChecklistBox(text = text, done = done, index = index)
+            CheckListBox(item = item, index = index)
         },
         background = {
             val color by animateColorAsState(Red1.copy())
@@ -277,8 +296,9 @@ fun CustomToggleButton(
                     .size(switchSize)
                     .background(
                         color = Color.White,
-                        shape = CircleShape
+                        shape = CircleShape,
                     )
+                    .border(1.dp, Color.Gray, CircleShape)
                     .padding(all = iConInnerPadding),
             )
         }
@@ -392,6 +412,7 @@ fun ChecklistWriteBoard(
 ) {
     lateinit var text: String
     lateinit var myDayOfWeek: Set<MyDayOfWeek>
+    val weekSet = mutableSetOf<MyDayOfWeek>()
     val clVM = viewModel<CheckListViewModel>()
     val db = CheckListDatabaseRepository.getInstance(main)
 
@@ -451,8 +472,20 @@ fun ChecklistWriteBoard(
                         fontWeight = FontWeight.Bold
                     )
                     CustomSpacer(height = 20.dp)
+                    
                     //요일 입력 버튼
-                    myDayOfWeek = weekSelectButtonList()
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)){
+                        weekSet.add(weekSelectButton(MyDayOfWeek.월))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.화))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.수))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.목))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.금))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.토))
+                        weekSet.add(weekSelectButton(MyDayOfWeek.일))
+                    }
+                    
+                    myDayOfWeek = weekSet.filter{ it != MyDayOfWeek.널 }.toSet()
+                    
                     CustomSpacer(height = 20.dp)
                     //확인 버튼
                     Button(
@@ -464,7 +497,7 @@ fun ChecklistWriteBoard(
                         onClick = {
                             clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, myDayOfWeek))
                             clVM.isUpdated = false
-                            clVM.lastUpdatedDate = LocalDate.now()
+//                            clVM.lastUpdatedDate = LocalDate.now()
                             db.updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
                             buttonOnClick()
                         }
@@ -609,7 +642,10 @@ private fun animateAlignmentAsState(
     return remember { derivedStateOf { BiasAlignment(horizontalBias = bias, verticalBias = 0f) } }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
+
+
 @Preview(showBackground = false)
 @Composable
 fun SwitchPreview() {
@@ -622,6 +658,7 @@ fun SwitchPreview() {
         ChecklistWriteBoard(main = context){}
         CustomSnackBar(visible = true, text = "TestText") {
         }
+//        CheckListBox(text = "Test", done = false, index = 1)
     }
 }
 

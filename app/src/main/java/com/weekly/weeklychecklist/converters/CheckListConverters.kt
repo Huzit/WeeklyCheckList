@@ -8,7 +8,7 @@ import com.google.gson.reflect.TypeToken
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import java.time.LocalDate
 
-class CheckListConverters {
+class CheckListConverter {
     @TypeConverter
     fun listToJson(value: List<CheckListInfo>): String?{
         return Gson().toJson(value)
@@ -19,16 +19,5 @@ class CheckListConverters {
         val listType = object: TypeToken<List<CheckListInfo>>(){}.type
         val gson = Gson()
         return gson.fromJson(value, listType)
-    }
-
-    @TypeConverter
-    fun dateToJson(value: LocalDate): String?{
-        return Gson().toJson(value)
-    }
-
-    @TypeConverter
-    fun jsonToDate(value: String): LocalDate{
-        val dateType = object: TypeToken<LocalDate>() {}.type
-        return Gson().fromJson(value, dateType)
     }
 }

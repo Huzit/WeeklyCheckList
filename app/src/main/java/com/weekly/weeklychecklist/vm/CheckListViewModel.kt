@@ -2,6 +2,7 @@ package com.weekly.weeklychecklist.vm
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -17,15 +18,10 @@ class CheckListViewModel(): ViewModel() {
     var listName = mutableStateOf<String>("default")
     var isUpdated: Boolean = false
     var lastUpdatedDate = LocalDate.now()
-    lateinit var context: Context
-
     //SnackBar 메시지 트리거
     val isSwipe = mutableStateOf(false)
-    private var checkListId = checkList.size
+    private var checkListId = 0
 
-    fun initContext(context: Context){
-        this.context = context
-    }
     fun checklistToString(): String {
         val sb = StringBuilder()
         checkList.forEach {
@@ -34,12 +30,30 @@ class CheckListViewModel(): ViewModel() {
         return sb.toString()
     }
 
+    fun setCheckListId(size: Int){
+        checkListId = size
+    }
+
     fun getCheckListId(): Int {
-        return checkListId++
+        //생성 후 DB 저장 전에 튕기면 key 중복 발생
+        if(checkList.size-1 == checkListId)
+            checkListId+=2
+        else
+            checkListId++
+        Log.d("체크리스트 아이디", checkListId.toString())
+        return checkListId
     }
 
     //요일마다 스위치 초기화
     fun switchInitialization(){
+        /***
+         * isUpdate는 onDestroy 시 다시 시작하므로 알아서 false
+         * 만약, 포그라운드에서 하루 이상이 지난다면 onDestroy를 못 탈수도 있으므로 false
+         ***/
+        if(lastUpdatedDate.isBefore(LocalDate.now()))
+            isUpdated = false
+        Log.d("on포그라운드", isUpdated.toString())
+
         //오늘의 요일
         val today = when(LocalDate.now().dayOfWeek){
             javaDayOfWeek.MONDAY -> MyDayOfWeek.월
@@ -61,6 +75,7 @@ class CheckListViewModel(): ViewModel() {
                 item.done = false
             }
             lastUpdatedDate = LocalDate.now()
+            isUpdated = true
             return
         }
         //최근 접속일 이 일주일 미만일 시
@@ -69,6 +84,7 @@ class CheckListViewModel(): ViewModel() {
                 //조건1. 같은 요일
                 if (item.restartWeek.contains(today) && !isUpdated) {
                     item.done = false
+                    isUpdated = true
                 }
                 //조건2. 다른 요일
                 else {
@@ -77,6 +93,7 @@ class CheckListViewModel(): ViewModel() {
                             item.done = false
                         }
                     }
+                    isUpdated = true
                 }
                 //마지막 일 시
                 if (index == checkList.size - 1) {
@@ -93,8 +110,9 @@ class CheckListViewModel(): ViewModel() {
         var mLastUpdatedDate = lastUpdatedDate
         val weeks = arrayListOf<DayOfWeek>()
         val reWeeks = arrayListOf<MyDayOfWeek>()
-        //마지막 앱 시작 날짜 부터 오늘 까지 요일 리턴 또는 일주일 지났을 경우
-        while(mLastUpdatedDate.toString() != today || weeks.size > 7){
+
+        //마지막 앱 시작 날짜 부터 오늘 까지 요일 리턴
+        while(mLastUpdatedDate.toString() != today){
             weeks.add(mLastUpdatedDate.dayOfWeek)
             mLastUpdatedDate = mLastUpdatedDate.plusDays(1)
         }
