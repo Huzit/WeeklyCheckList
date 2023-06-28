@@ -17,9 +17,10 @@ class CheckListViewModel(): ViewModel() {
     var checkList = mutableStateListOf<CheckListInfo>()
     var listName = mutableStateOf<String>("default")
     var isUpdated: Boolean = false
-    var lastUpdatedDate = LocalDate.now()
+    var lastUpdatedDate: LocalDate = LocalDate.now()
     //SnackBar 메시지 트리거
     val isSwipe = mutableStateOf(false)
+
     private var checkListId = 0
 
     fun checklistToString(): String {
@@ -65,9 +66,11 @@ class CheckListViewModel(): ViewModel() {
             javaDayOfWeek.SUNDAY -> MyDayOfWeek.일
             else -> MyDayOfWeek.널
         }
+
         if(lastUpdatedDate == null){
-            throw RuntimeException("환아 날짜가 없다")
+
         }
+
         val passedWeek = getBetweenWeek(lastUpdatedDate)
         //일주일 이상 지났을 시 전체 초기화
         if(passedWeek.size >= 7){
@@ -106,13 +109,13 @@ class CheckListViewModel(): ViewModel() {
     }
     //오늘 ~ 이전 이전 업데이트 날짜 사이의 요일 구하기
     private fun getBetweenWeek(lastUpdatedDate: LocalDate): Set<MyDayOfWeek>{
-        val today = LocalDate.now().toString()
+        val today = LocalDate.now()
         var mLastUpdatedDate = lastUpdatedDate
         val weeks = arrayListOf<DayOfWeek>()
         val reWeeks = arrayListOf<MyDayOfWeek>()
 
         //마지막 앱 시작 날짜 부터 오늘 까지 요일 리턴
-        while(mLastUpdatedDate.toString() != today){
+        while(mLastUpdatedDate.isBefore(today)){
             weeks.add(mLastUpdatedDate.dayOfWeek)
             mLastUpdatedDate = mLastUpdatedDate.plusDays(1)
         }

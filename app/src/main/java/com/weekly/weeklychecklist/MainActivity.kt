@@ -96,8 +96,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onResume() {
-        clVM.switchInitialization()
         super.onResume()
+        clVM.switchInitialization()
+    }
+
+    override fun onRestart() {
+        clVM.switchInitialization()
+        super.onRestart()
     }
 
     override fun onStop() {
