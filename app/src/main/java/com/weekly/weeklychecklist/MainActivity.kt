@@ -34,6 +34,8 @@ import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,12 +46,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
@@ -100,11 +106,6 @@ class MainActivity : ComponentActivity() {
         clVM.switchInitialization()
     }
 
-    override fun onRestart() {
-        clVM.switchInitialization()
-        super.onRestart()
-    }
-
     override fun onStop() {
         CheckListDatabaseRepository.getInstance(this)
             .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
@@ -128,6 +129,14 @@ fun WeeklyChecklistApp(main: MainActivity) {
 
     val backgroundTouchEvent = {
         clVM.isSwipe.value = false
+    }
+
+    val lifecycleEvent = rememberLifeCycleEvent()
+    LaunchedEffect(lifecycleEvent){
+        if(lifecycleEvent == Lifecycle.Event.ON_RESUME){
+            Log.d("lifecycleEffct", "onResume Effected")
+            clVM.switchInitialization()
+        }
     }
 
     WeeklyCheckListTheme {
@@ -276,6 +285,20 @@ fun FloatingActions(context: Context) {
             isPressed = false
         }
     }
+}
+
+@Composable
+fun rememberLifeCycleEvent(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current): Lifecycle.Event{
+    var state by remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
+    DisposableEffect(lifecycleOwner){
+        val observer = LifecycleEventObserver{_, event ->
+            state = event
+        }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+    return state
 }
 
 

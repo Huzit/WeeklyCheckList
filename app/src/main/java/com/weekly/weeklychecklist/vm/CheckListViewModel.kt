@@ -53,25 +53,12 @@ class CheckListViewModel(): ViewModel() {
          ***/
         if(lastUpdatedDate.isBefore(LocalDate.now()))
             isUpdated = false
-        Log.d("on포그라운드", isUpdated.toString())
-
-        //오늘의 요일
-        val today = when(LocalDate.now().dayOfWeek){
-            javaDayOfWeek.MONDAY -> MyDayOfWeek.월
-            javaDayOfWeek.TUESDAY -> MyDayOfWeek.화
-            javaDayOfWeek.WEDNESDAY -> MyDayOfWeek.수
-            javaDayOfWeek.THURSDAY -> MyDayOfWeek.목
-            javaDayOfWeek.FRIDAY -> MyDayOfWeek.금
-            javaDayOfWeek.SATURDAY -> MyDayOfWeek.토
-            javaDayOfWeek.SUNDAY -> MyDayOfWeek.일
-            else -> MyDayOfWeek.널
-        }
-
-        if(lastUpdatedDate == null){
-
-        }
+        Log.d("업데이트 됨?", isUpdated.toString())
 
         val passedWeek = getBetweenWeek(lastUpdatedDate)
+
+        Log.d("지난날짜", passedWeek.size.toString())
+
         //일주일 이상 지났을 시 전체 초기화
         if(passedWeek.size >= 7){
             checkList.forEach { item ->
@@ -85,19 +72,22 @@ class CheckListViewModel(): ViewModel() {
         else {
             checkList.forEachIndexed { index, item ->
                 //조건1. 같은 요일
-                if (item.restartWeek.contains(today) && !isUpdated) {
-                    item.done = false
-                    isUpdated = true
-                }
-                //조건2. 다른 요일
-                else {
+                if (!isUpdated) {
                     item.restartWeek.forEach { week ->
                         if (passedWeek.contains(week)) {
                             item.done = false
                         }
                     }
-                    isUpdated = true
                 }
+                //조건2. 다른 요일
+//                else if(!isUpdated) {
+//                    item.restartWeek.forEach { week ->
+//                        if (passedWeek.contains(week)) {
+//                            item.done = false
+//                        }
+//                    }
+//                    isUpdated = true
+//                }
                 //마지막 일 시
                 if (index == checkList.size - 1) {
                     isUpdated = true

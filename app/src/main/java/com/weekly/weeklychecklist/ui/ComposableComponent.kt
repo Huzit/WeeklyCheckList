@@ -88,6 +88,7 @@ fun CheckListBox(
     val width = configuration.screenWidthDp.minus(160).dp
     val height = 60.dp
     val cornerSize = 20
+    val done = remember { mutableStateOf(item.done) }
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
@@ -158,7 +159,7 @@ fun CheckListBox(
                     fontSize = dpToSp(dp = 10.dp),
                     modifier = Modifier.padding(start = 7.dp)
                 )
-                CustomToggleButton(isCheck = item.done, index = index)
+                CustomToggleButton(isCheck = done.value, index = index)
             }
         }
     }
