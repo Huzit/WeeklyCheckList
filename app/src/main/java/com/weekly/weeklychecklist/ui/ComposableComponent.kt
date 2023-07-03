@@ -1,9 +1,6 @@
 package com.weekly.weeklychecklist.ui
 
 import android.content.Context
-import android.os.Build
-import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -11,15 +8,26 @@ import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideIn
+import androidx.compose.animation.slideOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -27,7 +35,6 @@ import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.FloatingActionButton
 import androidx.compose.material.FractionalThreshold
 import androidx.compose.material.Snackbar
 import androidx.compose.material.Surface
@@ -41,6 +48,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -58,11 +66,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -70,18 +78,25 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
-import com.weekly.weeklychecklist.ui.theme.*
+import com.weekly.weeklychecklist.ui.theme.AmbientGray
+import com.weekly.weeklychecklist.ui.theme.BorderColor
+import com.weekly.weeklychecklist.ui.theme.ClickedYellow
+import com.weekly.weeklychecklist.ui.theme.Green
+import com.weekly.weeklychecklist.ui.theme.Red
+import com.weekly.weeklychecklist.ui.theme.Red1
+import com.weekly.weeklychecklist.ui.theme.Red2
+import com.weekly.weeklychecklist.ui.theme.SpotColor
+import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
-import java.time.LocalDate
 
 //체크리스트 항목
 @Composable
 fun CheckListBox(
     item: CheckListInfo,
-    index: Int
-){
+    index: Int,
+) {
     val configuration = LocalConfiguration.current
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
     val backgroundHeight: Dp = 72.dp
@@ -89,6 +104,7 @@ fun CheckListBox(
     val height = 60.dp
     val cornerSize = 20
     val done = remember { mutableStateOf(item.done) }
+
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
@@ -139,18 +155,19 @@ fun CheckListBox(
             Spacer(modifier = Modifier.weight(1f))
 
             //무작위로 들어오는 요일을 월 ~ 금으로 정렬
-            val weeks = item.restartWeek.toString().filter { it != ' ' && it != '[' && it != ']' }.split(",")
+            val weeks = item.restartWeek.toString().filter { it != ' ' && it != '[' && it != ']' }
+                .split(",")
             val result = StringBuilder()
             var resultWeeks = ""
             //sort
-            val myDayOfWeek =listOf<String>("월", "화", "수", "목", "금", "토", "일")
-            myDayOfWeek.forEach {week ->
-                if(weeks.contains(week))
+            val myDayOfWeek = listOf<String>("월", "화", "수", "목", "금", "토", "일")
+            myDayOfWeek.forEach { week ->
+                if (weeks.contains(week))
                     result.append("$week ")
             }
-            if(result.isNotEmpty())
+            if (result.isNotEmpty())
                 resultWeeks = result.deleteCharAt(result.lastIndex).toString()
-            if(resultWeeks == "월 화 수 목 금 토 일")
+            if (resultWeeks == "월 화 수 목 금 토 일")
                 resultWeeks = "매일"
 
             Column() {
@@ -178,12 +195,11 @@ fun ChecklistSwipable(
         initialValue = DismissValue.Default,
         confirmStateChange = {
             //Start로 dismiss시
-            if(it == DismissValue.DismissedToStart) {
+            if (it == DismissValue.DismissedToStart) {
                 //삭제이벤트
                 dismissToDelete()
                 true
-            }
-            else {
+            } else {
                 false
             }
         }
@@ -311,28 +327,27 @@ fun customTextField(
     fontSize: TextUnit = 20.sp,
     height: Dp = 75.dp,
     padding: Dp = 5.dp,
-    shapePercent: Int = 10
-): String{
-    var text by remember { mutableStateOf(TextFieldValue("")) }
+    shapePercent: Int = 10,
+    textEntered: String,
+): String {
+    var text by remember { mutableStateOf(textEntered) }
     BasicTextField(
         value = text,
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
             .background(SuperLightGray, shape = RoundedCornerShape(percent = shapePercent))
-            .padding(padding)
-        ,
+            .padding(padding),
         textStyle = TextStyle(
             fontWeight = FontWeight.Normal,
             fontSize = fontSize,
             textAlign = TextAlign.Start
         ),
-        maxLines = 3
-        ,onValueChange = {newText ->
+        maxLines = 3, onValueChange = { newText ->
             text = newText
         }
     )
-    return text.text
+    return text
 }
 
 //요일 선택 버튼
@@ -340,15 +355,24 @@ fun customTextField(
 fun weekSelectButton(
     week: MyDayOfWeek,
     size: Dp = 35.dp,
-    fontSize: TextUnit = 15.sp
-): MyDayOfWeek{
-    var isClicked by remember { mutableStateOf(false) }
+    fontSize: TextUnit = 15.sp,
+    isClicked: Boolean = false,
+    isContain: Boolean,
+): MyDayOfWeek {
+    var isClicked by remember { mutableStateOf(isClicked) }
+    var isContain by remember { mutableStateOf(isContain) }
     var backgroundColor by remember { mutableStateOf(Color.Transparent) }
     val returnSet = remember { mutableSetOf<MyDayOfWeek>() }
+    //todo 수정해야함
+    if(isContain){
+        returnSet.add(week)
+        backgroundColor = ClickedYellow
+        isContain = false
+    }
     Box(
         modifier = Modifier.size(size),
         contentAlignment = Alignment.Center
-    ){
+    ) {
         Button(
             modifier = Modifier
                 .size(size)
@@ -357,6 +381,7 @@ fun weekSelectButton(
             border = BorderStroke(2.dp, Color.Black),
             onClick = {
                 isClicked = !isClicked
+
                 backgroundColor = if(isClicked){
                     //클릭 시 추가
                     returnSet.add(week)
@@ -367,7 +392,7 @@ fun weekSelectButton(
                     Color.Transparent
                 }
             }
-        ){}
+        ) {}
         //일부러 이 위치, 브라켓 안에 넣으면 텍스트 미출력
         Text(
             text = week.name,
@@ -377,20 +402,70 @@ fun weekSelectButton(
             textAlign = TextAlign.Center
         )
     }
-    return if(returnSet.isNotEmpty()) returnSet.first() else MyDayOfWeek.널
+    return if (returnSet.isNotEmpty()) returnSet.first() else MyDayOfWeek.널
+}
+
+@Composable
+fun checkListWriteBoardWithBackGround(
+    context: Context,
+    clVM: CheckListViewModel,
+    index: Int = -1,
+    isPressed: MutableState<Boolean>,
+): MutableState<Boolean> {
+    val mIsPressed = isPressed
+    val halfHeight = LocalConfiguration.current.screenHeightDp / 2
+    //작성보드 뒷 배경
+    AnimatedVisibility(
+        visible = mIsPressed.value,
+        modifier = Modifier.fillMaxSize(),
+        enter = slideIn(initialOffset = { IntOffset(0, halfHeight) }) + fadeIn(initialAlpha = 0f),
+        exit = slideOut(
+            animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
+            targetOffset = { IntOffset(0, halfHeight) }
+        ) +
+                fadeOut(
+                    animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
+                    targetAlpha = 0f
+                ) //속도 더 빠르
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = AmbientGray)
+                .clickable(interactionSource = MutableInteractionSource(), indication = null) {
+                    mIsPressed.value = false
+                },
+            contentAlignment = Alignment.BottomCenter
+        ){
+            //수정 시
+            if(index > -1)
+                ChecklistWriteBoard(main = context, clVM = clVM, index = index) {
+                    //확인 클릭 시
+                    mIsPressed.value = false
+                }
+            //새로 생성
+            else
+                ChecklistWriteBoard(main = context, clVM = clVM) {
+                    //확인 클릭 시
+                    mIsPressed.value = false
+                }
+        }
+    }
+    return mIsPressed
 }
 
 //체크리스트 입력 보드
 @Composable
 fun ChecklistWriteBoard(
+    main: Context,
+    clVM: CheckListViewModel,
+    index: Int = -1,
     height: Dp = 350.dp,
     fontSize: TextUnit = 24.sp,
-    main: Context,
     buttonOnClick: () -> Unit,
 ) {
-    var text: String = ""
-    var myDayOfWeek = remember { mutableSetOf<MyDayOfWeek>(MyDayOfWeek.널) }
-    val clVM = viewModel<CheckListViewModel>()
+    var text = if(index == -1) "" else clVM.checkList[index].checklistContent
+    var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
     val db = CheckListDatabaseRepository.getInstance(main)
 
     Surface(
@@ -439,7 +514,7 @@ fun ChecklistWriteBoard(
                     CustomSpacer(height = 20.dp)
 
                     //할 일 입력
-                    text = customTextField()
+                    text = customTextField(textEntered = text)
 
                     CustomSpacer(height = 20.dp)
                     Text(
@@ -452,9 +527,9 @@ fun ChecklistWriteBoard(
 
                     //요일 버튼
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        for (week in MyDayOfWeek.values().filter { it != MyDayOfWeek.널 }){
+                        for (week in MyDayOfWeek.values().filter { it != MyDayOfWeek.널 }) {
                             //클릭 후 취소
-                            if(weekSelectButton(week) == MyDayOfWeek.널)
+                            if (weekSelectButton(week, isContain = myDayOfWeek.contains(week)) == MyDayOfWeek.널)
                                 myDayOfWeek.remove(week)
                             else
                                 myDayOfWeek.add(week)
@@ -467,13 +542,23 @@ fun ChecklistWriteBoard(
                     Button(
                         modifier = Modifier
                             .width(210.dp)
-                            .height(50.dp)
-                        ,
+                            .height(50.dp),
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checkList.add(CheckListInfo(clVM.getCheckListId(), text, myDayOfWeek))
+                            clVM.checkList.add(
+                                CheckListInfo(
+                                    clVM.getCheckListId(),
+                                    text,
+                                    myDayOfWeek
+                                )
+                            )
                             clVM.isUpdated = false
-                            db.updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+                            db.updateDatabase(
+                                clVM.listName.value,
+                                clVM.checkList,
+                                clVM.isUpdated,
+                                clVM.lastUpdatedDate
+                            )
                             buttonOnClick()
                         }
                     ) {
@@ -488,8 +573,9 @@ fun ChecklistWriteBoard(
         }
     }
 }
+
 @Composable
-fun CustomSpacer(height: Dp){
+fun CustomSpacer(height: Dp) {
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
@@ -502,7 +588,7 @@ fun CustomAlertDialog(
     message: String,
     positiveEvent: () -> Unit,
     negativeEvent: () -> Unit,
-){
+) {
     val width: Dp = 300.dp
     val height: Dp = 200.dp
     val fontSize: TextUnit = 23.sp
@@ -528,9 +614,10 @@ fun CustomAlertDialog(
         },
         buttons = {
             CustomSpacer(height = 20.dp)
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 Button(
@@ -567,7 +654,7 @@ fun CustomAlertDialog(
 }
 
 @Composable
-fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit){
+fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing)),
@@ -584,7 +671,7 @@ fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit){
             ) {
                 Text(text = text, color = Color.White)
             }
-            LaunchedEffect(Unit){
+            LaunchedEffect(Unit) {
                 delay(3500L)
                 launchedEffect()
             }
@@ -609,13 +696,16 @@ fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
 fun SwitchPreview() {
     val context = LocalContext.current
     Column {
-        weekSelectButton(MyDayOfWeek.널)
+//        weekSelectButton(MyDayOfWeek.널)
         CustomToggleButton(isCheck = true, 0)
         CustomToggleButton(isCheck = false, 0)
-        ChecklistWriteBoard(main = context){}
+        ChecklistWriteBoard(main = context, clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
-        CheckListBox(item = CheckListInfo(1, "dlfskj", setOf(MyDayOfWeek.월), false), 1)
+        CheckListBox(
+            item = CheckListInfo(1, "dlfskj", setOf(MyDayOfWeek.월), false),
+            1,
+        )
     }
 }
 

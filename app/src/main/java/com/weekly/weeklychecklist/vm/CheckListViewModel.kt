@@ -14,12 +14,20 @@ import com.weekly.weeklychecklist.MyDayOfWeek
 import java.time.DayOfWeek as javaDayOfWeek
 
 class CheckListViewModel(): ViewModel() {
+    //체크리스트
     var checkList = mutableStateListOf<CheckListInfo>()
+    //체크리스트의 이름
     var listName = mutableStateOf<String>("default")
+    //요일 초기화 됬는 지
     var isUpdated: Boolean = false
+    //마지막으로 업데이트 된 날짜
     var lastUpdatedDate: LocalDate = LocalDate.now()
     //SnackBar 메시지 트리거
     val isSwipe = mutableStateOf(false)
+    //onResume ReComposition Trigger
+    var restartMainActivity: Boolean = false
+    //무결성 검증을 위한 ID 리스트
+    val idList = arrayListOf<Int>()
 
     private var checkListId = 0
 
@@ -31,19 +39,22 @@ class CheckListViewModel(): ViewModel() {
         return sb.toString()
     }
 
-    fun setCheckListId(size: Int){
-        checkListId = size
+    fun setCheckListId(id: Int){
+        checkListId = id
     }
 
     fun getCheckListId(): Int {
-        //생성 후 DB 저장 전에 튕기면 key 중복 발생
-        if(checkList.size-1 == checkListId)
-            checkListId+=2
-        else
-            checkListId++
         Log.d("체크리스트 아이디", checkListId.toString())
-        return checkListId
+        //무결성 검증 후 리턴
+        while(idList.contains(checkListId)){
+            ++checkListId
+            Log.d("중복되엇도다", checkListId.toString())
+        }
+        return checkListId++
     }
+
+    fun addCheckListId() = checkListId++
+
 
     //요일마다 스위치 초기화
     fun switchInitialization(){
@@ -71,7 +82,6 @@ class CheckListViewModel(): ViewModel() {
         //최근 접속일 이 일주일 미만일 시
         else {
             checkList.forEachIndexed { index, item ->
-                //조건1. 같은 요일
                 if (!isUpdated) {
                     item.restartWeek.forEach { week ->
                         if (passedWeek.contains(week)) {
@@ -79,15 +89,6 @@ class CheckListViewModel(): ViewModel() {
                         }
                     }
                 }
-                //조건2. 다른 요일
-//                else if(!isUpdated) {
-//                    item.restartWeek.forEach { week ->
-//                        if (passedWeek.contains(week)) {
-//                            item.done = false
-//                        }
-//                    }
-//                    isUpdated = true
-//                }
                 //마지막 일 시
                 if (index == checkList.size - 1) {
                     isUpdated = true

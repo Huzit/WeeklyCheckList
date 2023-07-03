@@ -1,20 +1,14 @@
 package com.weekly.weeklychecklist
 
 import android.content.Context
-import android.os.Build
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.TweenSpec
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideIn
-import androidx.compose.animation.slideOut
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,18 +45,15 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
-import com.weekly.weeklychecklist.ui.ChecklistWriteBoard
 import com.weekly.weeklychecklist.ui.CustomSnackBar
-import com.weekly.weeklychecklist.ui.theme.AmbientGray
+import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
 import com.weekly.weeklychecklist.ui.theme.Red2
 import com.weekly.weeklychecklist.ui.theme.Red4
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
@@ -70,7 +62,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 
 class MainActivity : ComponentActivity() {
@@ -79,7 +70,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WeeklyChecklistApp(this)
+            WeeklyChecklistApp(context = this, clVM = clVM)
         }
         //DB init
         val db = CheckListDatabaseRepository.getInstance(this)
@@ -88,52 +79,80 @@ class MainActivity : ComponentActivity() {
 
         //get
         if (default != null) {
-            clVM.apply{
+            clVM.apply {
                 checkList = default.checkLists.toMutableStateList()
                 isUpdated = default.isUpdated ?: false
                 lastUpdatedDate = default.lastUpdatedDate
 
-                if(checkList.size == 0)
+                checkList.forEach { list ->
+                    idList.add(list.id)
+                }
+
+                if (checkList.size == 0)
                     setCheckListId(0)
                 else
-                    setCheckListId(checkList.size)
+                    setCheckListId(checkList.last().id)
             }
         }
+    }
+
+    override fun onBackPressed() {
+
     }
 
     override fun onResume() {
         super.onResume()
         clVM.switchInitialization()
+        //포그라운드시 메인 액티비티 강제 리컴포지션(추후 반드시 수정할 것, 매우매우 잘못된 방식!!!)
+        if (clVM.restartMainActivity) {
+            startActivity(Intent(this, MainActivity::class.java))
+            clVM.restartMainActivity = false
+        }
     }
 
     override fun onStop() {
+        clVM.restartMainActivity = true
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+            .updateDatabase(
+                clVM.listName.value,
+                clVM.checkList,
+                clVM.isUpdated,
+                clVM.lastUpdatedDate
+            )
         super.onStop()
     }
 
 
     override fun onDestroy() {
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(clVM.listName.value, clVM.checkList, clVM.isUpdated, clVM.lastUpdatedDate)
+            .updateDatabase(
+                clVM.listName.value,
+                clVM.checkList,
+                clVM.isUpdated,
+                clVM.lastUpdatedDate
+            )
         super.onDestroy()
     }
 }
 
 //앱 전체 컴포저블
 @Composable
-fun WeeklyChecklistApp(main: MainActivity) {
+fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     val cornerSize = 7
     val boxHeight = LocalConfiguration.current.screenHeightDp.minus(50).dp
-    val clVM = viewModel<CheckListViewModel>()
 
     val backgroundTouchEvent = {
         clVM.isSwipe.value = false
     }
 
+
+    var openIndex = remember { mutableStateOf(-1) }
+    var openFlag = remember { mutableStateOf(false) }
+    var openInfo = remember { Pair(openFlag, openIndex) }
+
     val lifecycleEvent = rememberLifeCycleEvent()
-    LaunchedEffect(lifecycleEvent){
-        if(lifecycleEvent == Lifecycle.Event.ON_RESUME){
+    LaunchedEffect(lifecycleEvent) {
+        if (lifecycleEvent == Lifecycle.Event.ON_RESUME) {
             Log.d("lifecycleEffct", "onResume Effected")
             clVM.switchInitialization()
         }
@@ -183,10 +202,12 @@ fun WeeklyChecklistApp(main: MainActivity) {
                         .padding(top = 20.dp, start = 10.dp, end = 10.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    ListTodo(context = main)
+                    openInfo = ListTodo(clVM = clVM, openIndex = openIndex, openFlag = openFlag)
+                    openFlag = openInfo.first
+                    openIndex = openInfo.second
                 }
             }
-            FloatingActions(main)
+            FloatingActions(context, clVM)
             CustomSnackBar(
                 visible = clVM.isSwipe.value,
                 text = "삭제되었습니다",
@@ -195,14 +216,25 @@ fun WeeklyChecklistApp(main: MainActivity) {
                     clVM.isSwipe.value = false
                 }
             )
+
+            openFlag = checkListWriteBoardWithBackGround(
+                context = context,
+                clVM = clVM,
+                isPressed = openFlag,
+                index = openIndex.value
+            )
         }
     }
 }
+
 //투두 리스트 리사이클러뷰
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListTodo(context: Context) {
-    val clVM = viewModel<CheckListViewModel>()
+fun ListTodo(
+    clVM: CheckListViewModel,
+    openIndex: MutableState<Int> = mutableStateOf(-1),
+    openFlag: MutableState<Boolean> = mutableStateOf(false)
+): Pair<MutableState<Boolean>, MutableState<Int>> {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -211,13 +243,23 @@ fun ListTodo(context: Context) {
         items(
             count = clVM.checkList.size,
             key = { item: Int -> clVM.checkList[item].id },
-        ) { item ->
-            val currentItem by rememberUpdatedState(newValue = clVM.checkList[item])
+        ) { index ->
+            val currentItem by rememberUpdatedState(newValue = clVM.checkList[index])
             //체크리스트(스와이프) 정의
             ChecklistSwipable(
-                modifier = Modifier.animateItemPlacement(),
-                item = clVM.checkList[item],
-                index = item
+                modifier = Modifier
+                    .animateItemPlacement(
+                        animationSpec = tween(
+                            durationMillis = 500,
+                            easing = LinearOutSlowInEasing,
+                        )
+                    )
+                    .clickable {
+                        openIndex.value = index
+                        openFlag.value = !openFlag.value
+                    },
+                item = clVM.checkList[index],
+                index = index,
             ) {
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
@@ -229,12 +271,13 @@ fun ListTodo(context: Context) {
             }
         }
     }
+    return Pair(openFlag, openIndex)
 }
 
 //플로팅 버튼
 @Composable
-fun FloatingActions(context: Context) {
-    var isPressed by remember { mutableStateOf(false) }
+fun FloatingActions(context: Context, clVM: CheckListViewModel) {
+    var isPressed = remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,7 +289,7 @@ fun FloatingActions(context: Context) {
             modifier = Modifier.size(70.dp),
             backgroundColor = Red2,
             onClick = {
-                isPressed = !isPressed
+                isPressed.value = !isPressed.value
             },
         ) {
             Icon(
@@ -256,42 +299,15 @@ fun FloatingActions(context: Context) {
             )
         }
     }
-    //작성보드 뒷 배경
-    if (isPressed)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = AmbientGray)
-                .clickable(interactionSource = MutableInteractionSource(), indication = null) {
-                    isPressed = false
-                },
-        )
-    val halfHeight = LocalConfiguration.current.screenHeightDp / 2
-    AnimatedVisibility(
-        visible = isPressed,
-        modifier = Modifier.height(350.dp),
-        enter = slideIn(initialOffset = { IntOffset(0, halfHeight) }) + fadeIn(initialAlpha = 0f),
-        exit = slideOut(
-            animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
-            targetOffset = { IntOffset(0, halfHeight) }
-        ) +
-                fadeOut(
-                    animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
-                    targetAlpha = 0f
-                ) //속도 더 빠르
-    ) {
-        ChecklistWriteBoard(main = context) {
-            //확인 클릭 시
-            isPressed = false
-        }
-    }
+
+    isPressed = checkListWriteBoardWithBackGround(context = context, clVM = clVM, isPressed = isPressed)
 }
 
 @Composable
-fun rememberLifeCycleEvent(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current): Lifecycle.Event{
+fun rememberLifeCycleEvent(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current): Lifecycle.Event {
     var state by remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
-    DisposableEffect(lifecycleOwner){
-        val observer = LifecycleEventObserver{_, event ->
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
             state = event
         }
         onDispose {
@@ -305,5 +321,5 @@ fun rememberLifeCycleEvent(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun Greeting() {
-    WeeklyChecklistApp(MainActivity())
+    WeeklyChecklistApp(MainActivity(), clVM = CheckListViewModel())
 }
