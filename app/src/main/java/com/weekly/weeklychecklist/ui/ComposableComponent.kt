@@ -1,6 +1,7 @@
 package com.weekly.weeklychecklist.ui
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -11,7 +12,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -143,12 +143,15 @@ fun CheckListBox(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp),
                         text = item.checklistContent,
+                        modifier = Modifier
+                            .padding(start = 10.dp, end = 10.dp)
+                            .fillMaxWidth(),
+                        maxLines = 3,
                         fontSize = 18.sp,
-                        maxLines = 1,
                         fontWeight = FontWeight.Bold,
-                        overflow = TextOverflow.Clip
+                        overflow = TextOverflow.Clip,
+                        lineHeight = 14.sp,
                     )
                 }
             }
@@ -183,7 +186,7 @@ fun CheckListBox(
 }
 
 //스와이프 삭제기능
-@OptIn(ExperimentalMaterialApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterialApi::class)
 @Composable
 fun ChecklistSwipable(
     modifier: Modifier,
@@ -343,7 +346,8 @@ fun customTextField(
             fontSize = fontSize,
             textAlign = TextAlign.Start
         ),
-        maxLines = 3, onValueChange = { newText ->
+        maxLines = 3,
+        onValueChange = { newText ->
             text = newText
         }
     )
@@ -357,17 +361,21 @@ fun weekSelectButton(
     size: Dp = 35.dp,
     fontSize: TextUnit = 15.sp,
     isClicked: Boolean = false,
-    isContain: Boolean,
+    isContain: Boolean = false,
 ): MyDayOfWeek {
+    //클릭 여부
     var isClicked by remember { mutableStateOf(isClicked) }
+    //수정 시 포함 여부
     var isContain by remember { mutableStateOf(isContain) }
     var backgroundColor by remember { mutableStateOf(Color.Transparent) }
+    //중복 자료 방지를 위해 Set 사용
     val returnSet = remember { mutableSetOf<MyDayOfWeek>() }
-    //todo 수정해야함
+    //수정 시 DB의 요일에 포함
     if(isContain){
         returnSet.add(week)
         backgroundColor = ClickedYellow
         isContain = false
+        isClicked = true
     }
     Box(
         modifier = Modifier.size(size),
@@ -381,7 +389,6 @@ fun weekSelectButton(
             border = BorderStroke(2.dp, Color.Black),
             onClick = {
                 isClicked = !isClicked
-
                 backgroundColor = if(isClicked){
                     //클릭 시 추가
                     returnSet.add(week)
@@ -405,6 +412,7 @@ fun weekSelectButton(
     return if (returnSet.isNotEmpty()) returnSet.first() else MyDayOfWeek.널
 }
 
+//체크리스트 작성 보드 + 애니메이션
 @Composable
 fun checkListWriteBoardWithBackGround(
     context: Context,
@@ -415,9 +423,22 @@ fun checkListWriteBoardWithBackGround(
     val mIsPressed = isPressed
     val halfHeight = LocalConfiguration.current.screenHeightDp / 2
     //작성보드 뒷 배경
+    if(mIsPressed.value) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(color = AmbientGray)
+                .clickable(interactionSource = MutableInteractionSource(), indication = null) {
+                    mIsPressed.value = false
+                },
+        )
+    }
+    //팝업 애니메이션
     AnimatedVisibility(
         visible = mIsPressed.value,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(350.dp),
         enter = slideIn(initialOffset = { IntOffset(0, halfHeight) }) + fadeIn(initialAlpha = 0f),
         exit = slideOut(
             animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
@@ -428,32 +449,21 @@ fun checkListWriteBoardWithBackGround(
                     targetAlpha = 0f
                 ) //속도 더 빠르
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(color = AmbientGray)
-                .clickable(interactionSource = MutableInteractionSource(), indication = null) {
-                    mIsPressed.value = false
-                },
-            contentAlignment = Alignment.BottomCenter
-        ){
-            //수정 시
-            if(index > -1)
-                ChecklistWriteBoard(main = context, clVM = clVM, index = index) {
-                    //확인 클릭 시
-                    mIsPressed.value = false
-                }
-            //새로 생성
-            else
-                ChecklistWriteBoard(main = context, clVM = clVM) {
-                    //확인 클릭 시
-                    mIsPressed.value = false
-                }
-        }
+        //수정 시
+        if(index > -1)
+            ChecklistWriteBoard(main = context, clVM = clVM, index = index) {
+                //확인 클릭 시
+                mIsPressed.value = false
+            }
+        //새로 생성
+        else
+            ChecklistWriteBoard(main = context, clVM = clVM) {
+                //확인 클릭 시
+                mIsPressed.value = false
+            }
     }
     return mIsPressed
 }
-
 //체크리스트 입력 보드
 @Composable
 fun ChecklistWriteBoard(
@@ -528,7 +538,7 @@ fun ChecklistWriteBoard(
                     //요일 버튼
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (week in MyDayOfWeek.values().filter { it != MyDayOfWeek.널 }) {
-                            //클릭 후 취소
+                            //클릭 후 취소 및 수정 시 선택된 요일 반영
                             if (weekSelectButton(week, isContain = myDayOfWeek.contains(week)) == MyDayOfWeek.널)
                                 myDayOfWeek.remove(week)
                             else
@@ -545,13 +555,23 @@ fun ChecklistWriteBoard(
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(Red2),
                         onClick = {
-                            clVM.checkList.add(
-                                CheckListInfo(
-                                    clVM.getCheckListId(),
-                                    text,
-                                    myDayOfWeek
+                            //수정일 시
+                            if(index != -1) {
+                                clVM.checkList[index] = CheckListInfo(index, text, myDayOfWeek)
+                                Log.d(javaClass.simpleName, "수정한 Index : $index")
+                            }
+                            //새로 작성일 시
+                            else {
+                                //TODO index 통일 시킬 것
+                                clVM.checkList.add(
+                                    CheckListInfo(
+                                        clVM.getCheckListId(),
+                                        text,
+                                        myDayOfWeek
+                                    )
                                 )
-                            )
+                                Log.d(javaClass.simpleName, "새로 작성한 Index : ${clVM.getRowCheckListID()}")
+                            }
                             clVM.isUpdated = false
                             db.updateDatabase(
                                 clVM.listName.value,
@@ -559,6 +579,7 @@ fun ChecklistWriteBoard(
                                 clVM.isUpdated,
                                 clVM.lastUpdatedDate
                             )
+                            //창 닫는 콜백
                             buttonOnClick()
                         }
                     ) {
@@ -582,7 +603,7 @@ fun CustomSpacer(height: Dp) {
             .height(height)
     )
 }
-
+//다이얼로그
 @Composable
 fun CustomAlertDialog(
     message: String,
@@ -652,7 +673,8 @@ fun CustomAlertDialog(
         shape = RoundedCornerShape(24.dp)
     )
 }
-
+//Custom SnackBar
+//visible과 LaunchedEffect로 직접 종료 트리거 설정해줘야함
 @Composable
 fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit) {
     AnimatedVisibility(

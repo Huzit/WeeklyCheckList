@@ -1,17 +1,12 @@
 package com.weekly.weeklychecklist.vm
 
-import android.content.Context
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
-import java.lang.RuntimeException
+import com.weekly.weeklychecklist.MyDayOfWeek
 import java.time.DayOfWeek
 import java.time.LocalDate
-import com.weekly.weeklychecklist.MyDayOfWeek
-import java.time.DayOfWeek as javaDayOfWeek
 
 class CheckListViewModel(): ViewModel() {
     //체크리스트
@@ -31,6 +26,8 @@ class CheckListViewModel(): ViewModel() {
 
     private var checkListId = 0
 
+    fun getRowCheckListID(): Int = checkListId
+
     fun checklistToString(): String {
         val sb = StringBuilder()
         checkList.forEach {
@@ -39,22 +36,20 @@ class CheckListViewModel(): ViewModel() {
         return sb.toString()
     }
 
+    fun minCheckListId() = --checkListId
+
     fun setCheckListId(id: Int){
         checkListId = id
     }
 
     fun getCheckListId(): Int {
-        Log.d("체크리스트 아이디", checkListId.toString())
         //무결성 검증 후 리턴
         while(idList.contains(checkListId)){
+            //중복일 시 증가
             ++checkListId
-            Log.d("중복되엇도다", checkListId.toString())
         }
         return checkListId++
     }
-
-    fun addCheckListId() = checkListId++
-
 
     //요일마다 스위치 초기화
     fun switchInitialization(){

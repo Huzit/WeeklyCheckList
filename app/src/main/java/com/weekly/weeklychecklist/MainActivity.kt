@@ -1,5 +1,6 @@
 package com.weekly.weeklychecklist
 
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
@@ -16,6 +17,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,9 +25,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,7 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -47,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.DialogCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -72,12 +80,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             WeeklyChecklistApp(context = this, clVM = clVM)
         }
+
         //DB init
         val db = CheckListDatabaseRepository.getInstance(this)
         db.initDatabase()
         val default = db.getDatabase("default")
 
-        //get
+        //DB get
         if (default != null) {
             clVM.apply {
                 checkList = default.checkLists.toMutableStateList()
@@ -102,15 +111,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        //요일 지나면 스위치 초기화
         clVM.switchInitialization()
-        //포그라운드시 메인 액티비티 강제 리컴포지션(추후 반드시 수정할 것, 매우매우 잘못된 방식!!!)
+        //포그라운드시 메인 액티비티 강제 리컴포지션 (추후 반드시 수정할 것, 매우매우 잘못된 방식 이라고 생각!!!)
         if (clVM.restartMainActivity) {
-            startActivity(Intent(this, MainActivity::class.java))
             clVM.restartMainActivity = false
+            startActivity(Intent(this, MainActivity::class.java))
         }
     }
-
-    override fun onStop() {
+    //종료 시 자동 저장
+    override fun onPause() {
         clVM.restartMainActivity = true
         CheckListDatabaseRepository.getInstance(this)
             .updateDatabase(
@@ -119,9 +129,8 @@ class MainActivity : ComponentActivity() {
                 clVM.isUpdated,
                 clVM.lastUpdatedDate
             )
-        super.onStop()
+        super.onPause()
     }
-
 
     override fun onDestroy() {
         CheckListDatabaseRepository.getInstance(this)
@@ -140,23 +149,16 @@ class MainActivity : ComponentActivity() {
 fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     val cornerSize = 7
     val boxHeight = LocalConfiguration.current.screenHeightDp.minus(50).dp
-
+    //Custom SnackBar 트리거
     val backgroundTouchEvent = {
         clVM.isSwipe.value = false
     }
-
-
+    //수정 항목 인덱스
     var openIndex = remember { mutableStateOf(-1) }
+    //수정 트리거
     var openFlag = remember { mutableStateOf(false) }
-    var openInfo = remember { Pair(openFlag, openIndex) }
-
-    val lifecycleEvent = rememberLifeCycleEvent()
-    LaunchedEffect(lifecycleEvent) {
-        if (lifecycleEvent == Lifecycle.Event.ON_RESUME) {
-            Log.d("lifecycleEffct", "onResume Effected")
-            clVM.switchInitialization()
-        }
-    }
+    //ListTodo 리턴용
+    var openInfo: Pair<MutableState<Boolean>, MutableState<Int>>
 
     WeeklyCheckListTheme {
         //뒷 배경
@@ -176,7 +178,6 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-
                 //타이틀
                 Text(
                     modifier = Modifier.padding(20.dp),
@@ -202,12 +203,15 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                         .padding(top = 20.dp, start = 10.dp, end = 10.dp),
                     contentAlignment = Alignment.TopCenter
                 ) {
-                    openInfo = ListTodo(clVM = clVM, openIndex = openIndex, openFlag = openFlag)
+                    //'clickable' callback 받음
+                    openInfo = listTodo(clVM = clVM, openIndex = openIndex, openFlag = openFlag)
                     openFlag = openInfo.first
                     openIndex = openInfo.second
                 }
             }
+            //플로팅 버튼
             FloatingActions(context, clVM)
+            //커스텀 스낵바
             CustomSnackBar(
                 visible = clVM.isSwipe.value,
                 text = "삭제되었습니다",
@@ -216,7 +220,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                     clVM.isSwipe.value = false
                 }
             )
-
+            //체크리스트 작성 보드
             openFlag = checkListWriteBoardWithBackGround(
                 context = context,
                 clVM = clVM,
@@ -230,13 +234,13 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
 //투두 리스트 리사이클러뷰
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListTodo(
+fun listTodo(
     clVM: CheckListViewModel,
     openIndex: MutableState<Int> = mutableStateOf(-1),
     openFlag: MutableState<Boolean> = mutableStateOf(false)
 ): Pair<MutableState<Boolean>, MutableState<Int>> {
     LazyColumn(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         //리사이클러뷰
@@ -253,7 +257,8 @@ fun ListTodo(
                             durationMillis = 500,
                             easing = LinearOutSlowInEasing,
                         )
-                    )
+                    )//TODO basicMarquee
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable {
                         openIndex.value = index
                         openFlag.value = !openFlag.value
@@ -266,6 +271,7 @@ fun ListTodo(
                     delay(300L)
                     //스와이프 시 삭제
                     clVM.checkList.remove(currentItem)
+                    clVM.minCheckListId()
                     clVM.isSwipe.value = true
                 }
             }
@@ -287,7 +293,8 @@ fun FloatingActions(context: Context, clVM: CheckListViewModel) {
     ) {
         FloatingActionButton(
             modifier = Modifier.size(70.dp),
-            backgroundColor = Red2,
+            shape = CircleShape,
+            containerColor = Red2,
             onClick = {
                 isPressed.value = !isPressed.value
             },
@@ -299,24 +306,9 @@ fun FloatingActions(context: Context, clVM: CheckListViewModel) {
             )
         }
     }
-
+    //플로팅 버튼 클릭 이벤트
     isPressed = checkListWriteBoardWithBackGround(context = context, clVM = clVM, isPressed = isPressed)
 }
-
-@Composable
-fun rememberLifeCycleEvent(lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current): Lifecycle.Event {
-    var state by remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            state = event
-        }
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-    return state
-}
-
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
