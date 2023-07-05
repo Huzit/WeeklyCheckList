@@ -48,7 +48,8 @@ class CheckListViewModel(): ViewModel() {
             //중복일 시 증가
             ++checkListId
         }
-        return checkListId++
+        idList.add(checkListId)
+        return checkListId
     }
 
     //요일마다 스위치 초기화

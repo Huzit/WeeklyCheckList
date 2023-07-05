@@ -557,20 +557,22 @@ fun ChecklistWriteBoard(
                         onClick = {
                             //수정일 시
                             if(index != -1) {
-                                clVM.checkList[index] = CheckListInfo(index, text, myDayOfWeek)
+                                clVM.checkList[index].checklistContent = text
+                                clVM.checkList[index].restartWeek = myDayOfWeek
                                 Log.d(javaClass.simpleName, "수정한 Index : $index")
                             }
                             //새로 작성일 시
                             else {
+                                val id = clVM.getCheckListId()
                                 //TODO index 통일 시킬 것
                                 clVM.checkList.add(
                                     CheckListInfo(
-                                        clVM.getCheckListId(),
+                                        id,
                                         text,
                                         myDayOfWeek
                                     )
                                 )
-                                Log.d(javaClass.simpleName, "새로 작성한 Index : ${clVM.getRowCheckListID()}")
+                                Log.d(javaClass.simpleName, "새로 작성한 Index : $id")
                             }
                             clVM.isUpdated = false
                             db.updateDatabase(
@@ -682,20 +684,26 @@ fun CustomSnackBar(visible: Boolean, text: String, launchedEffect: () -> Unit) {
         enter = fadeIn(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing)),
         exit = fadeOut(animationSpec = TweenSpec(200, 100, FastOutLinearInEasing))
     ) {
-        Snackbar(
-            modifier = Modifier
-                .width(LocalConfiguration.current.screenWidthDp.minus(20).dp),
-            shape = RoundedCornerShape(percent = 30)
+        Surface(
+            modifier = Modifier,
+            color = Color.Transparent
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            Snackbar(
+                modifier = Modifier
+                    .width(LocalConfiguration.current.screenWidthDp.minus(20).dp),
+                shape = RoundedCornerShape(percent = 30),
+                elevation = 0.dp
             ) {
-                Text(text = text, color = Color.White)
-            }
-            LaunchedEffect(Unit) {
-                delay(3500L)
-                launchedEffect()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(text = text, color = Color.White)
+                }
+                LaunchedEffect(Unit) {
+                    delay(3500L)
+                    launchedEffect()
+                }
             }
         }
     }

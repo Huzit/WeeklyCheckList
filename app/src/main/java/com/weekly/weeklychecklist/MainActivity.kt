@@ -1,10 +1,8 @@
 package com.weekly.weeklychecklist
 
-import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -17,7 +15,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,37 +24,26 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.app.DialogCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.LifecycleOwner
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.CustomSnackBar
@@ -90,17 +76,14 @@ class MainActivity : ComponentActivity() {
         if (default != null) {
             clVM.apply {
                 checkList = default.checkLists.toMutableStateList()
-                isUpdated = default.isUpdated ?: false
+                isUpdated = default.isUpdated
                 lastUpdatedDate = default.lastUpdatedDate
 
                 checkList.forEach { list ->
                     idList.add(list.id)
                 }
 
-                if (checkList.size == 0)
-                    setCheckListId(0)
-                else
-                    setCheckListId(checkList.last().id)
+                setCheckListId(checkList.last().id)
             }
         }
     }
