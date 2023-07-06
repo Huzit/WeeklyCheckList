@@ -559,12 +559,11 @@ fun ChecklistWriteBoard(
                             if(index != -1) {
                                 clVM.checkList[index].checklistContent = text
                                 clVM.checkList[index].restartWeek = myDayOfWeek
-                                Log.d(javaClass.simpleName, "수정한 Index : $index")
+                                Log.d(javaClass.simpleName, "수정한 ID : ${clVM.checkList[index].id}")
                             }
                             //새로 작성일 시
                             else {
                                 val id = clVM.getCheckListId()
-                                //TODO index 통일 시킬 것
                                 clVM.checkList.add(
                                     CheckListInfo(
                                         id,
@@ -572,7 +571,7 @@ fun ChecklistWriteBoard(
                                         myDayOfWeek
                                     )
                                 )
-                                Log.d(javaClass.simpleName, "새로 작성한 Index : $id")
+                                Log.d(javaClass.simpleName, "새로 작성한 ID : $id")
                             }
                             clVM.isUpdated = false
                             db.updateDatabase(
@@ -726,14 +725,14 @@ fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
 fun SwitchPreview() {
     val context = LocalContext.current
     Column {
-//        weekSelectButton(MyDayOfWeek.널)
+        weekSelectButton(MyDayOfWeek.널)
         CustomToggleButton(isCheck = true, 0)
         CustomToggleButton(isCheck = false, 0)
         ChecklistWriteBoard(main = context, clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
         CheckListBox(
-            item = CheckListInfo(1, "dlfskj", setOf(MyDayOfWeek.월), false),
+            item = CheckListInfo(1, "preview content", setOf(MyDayOfWeek.월), false),
             1,
         )
     }

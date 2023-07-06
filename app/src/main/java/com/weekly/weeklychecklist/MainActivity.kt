@@ -80,10 +80,13 @@ class MainActivity : ComponentActivity() {
                 lastUpdatedDate = default.lastUpdatedDate
 
                 checkList.forEach { list ->
-                    idList.add(list.id)
+                    idList[list.id] = true
                 }
 
-                setCheckListId(checkList.last().id)
+                if(checkList.size == 0)
+                    setCheckListId(0)
+                else
+                    setCheckListId(checkList.last().id)
             }
         }
     }
@@ -254,7 +257,8 @@ fun listTodo(
                     delay(300L)
                     //스와이프 시 삭제
                     clVM.checkList.remove(currentItem)
-                    clVM.minCheckListId()
+                    clVM.idList.remove(currentItem.id)
+                    clVM.resetCheckListId()
                     clVM.isSwipe.value = true
                 }
             }

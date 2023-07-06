@@ -22,11 +22,9 @@ class CheckListViewModel(): ViewModel() {
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
     //무결성 검증을 위한 ID 리스트
-    val idList = arrayListOf<Int>()
+    val idList = mutableMapOf<Int, Boolean>()
 
     private var checkListId = 0
-
-    fun getRowCheckListID(): Int = checkListId
 
     fun checklistToString(): String {
         val sb = StringBuilder()
@@ -36,7 +34,7 @@ class CheckListViewModel(): ViewModel() {
         return sb.toString()
     }
 
-    fun minCheckListId() = --checkListId
+    fun resetCheckListId() = idList.keys.max()
 
     fun setCheckListId(id: Int){
         checkListId = id
@@ -44,11 +42,11 @@ class CheckListViewModel(): ViewModel() {
 
     fun getCheckListId(): Int {
         //무결성 검증 후 리턴
-        while(idList.contains(checkListId)){
+        if(idList.contains(checkListId)){
             //중복일 시 증가
             ++checkListId
         }
-        idList.add(checkListId)
+        idList[checkListId] = true
         return checkListId
     }
 

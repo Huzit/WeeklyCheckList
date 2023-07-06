@@ -25,9 +25,7 @@ class CheckListDatabaseRepository(private val context: Context) {
         ).build()
         dao =  db.checklistDao()
     }
-
-    
-    fun insertDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch {
+    private fun insertDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch {
         try{
             dao.insertCheckList(CheckListEntity(listName, clInfo, isUpdated, lastUpdatedDate))
         } catch (e: RuntimeException){
@@ -39,7 +37,6 @@ class CheckListDatabaseRepository(private val context: Context) {
     fun getDatabase(listName: String): CheckListEntity = runBlocking { dao.getCheckList(listName) }
 
     //update
-    
     fun updateDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch{
         try {
             val checkList = dao.getCheckList(listName)
