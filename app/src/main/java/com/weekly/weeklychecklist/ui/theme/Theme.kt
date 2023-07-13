@@ -16,15 +16,15 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Red1,
-    secondary = Red2,
-    tertiary = Red3
+    primary = SwipeBackground,
+    secondary = ConfirmButton,
+    tertiary = CheckListBackground
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Red1,
-    secondary = Red2,
-    tertiary = Red3
+    primary = SwipeBackground,
+    secondary = ConfirmButton,
+    tertiary = CheckListBackground
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),

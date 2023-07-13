@@ -11,10 +11,10 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 //Default Theme Color
-val Red1 = Color(0xFFD14D72)
-val Red2 = Color(0xFFFF748C)
-val Red3 = Color(0xFFFCC8D1)
-val Red4 = Color(0xFFFEF2F4)
+val SwipeBackground = Color(0xFFD14D72)
+val ConfirmButton = Color(0xFFFF748C)
+val CheckListBackground = Color(0xFFFCC8D1)
+val BoardBackground = Color(0xFFFEF2F4)
 
 //Dialog Background shadow
 val DialogShadow = Color(0x80B4B4B4)

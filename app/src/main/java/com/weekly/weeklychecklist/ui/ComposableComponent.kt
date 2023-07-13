@@ -80,11 +80,12 @@ import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.BorderColor
+import com.weekly.weeklychecklist.ui.theme.CheckListBackground
 import com.weekly.weeklychecklist.ui.theme.ClickedYellow
 import com.weekly.weeklychecklist.ui.theme.Green
 import com.weekly.weeklychecklist.ui.theme.Red
-import com.weekly.weeklychecklist.ui.theme.Red1
-import com.weekly.weeklychecklist.ui.theme.Red2
+import com.weekly.weeklychecklist.ui.theme.SwipeBackground
+import com.weekly.weeklychecklist.ui.theme.ConfirmButton
 import com.weekly.weeklychecklist.ui.theme.SpotColor
 import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.vm.CheckListInfo
@@ -108,7 +109,7 @@ fun CheckListBox(
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
-        color = Color.White,
+        color = CheckListBackground,
         shape = RoundedCornerShape(cornerSize),
         border = BorderStroke(1.dp, color = SuperLightGray)
     ) {
@@ -218,7 +219,7 @@ fun ChecklistSwipable(
             CheckListBox(item = item, index = index)
         },
         background = {
-            val color by animateColorAsState(Red1.copy())
+            val color by animateColorAsState(SwipeBackground.copy())
             val icon = painterResource(id = R.drawable.delete)
             val scale by animateFloatAsState(1.0f)
 
@@ -253,7 +254,7 @@ fun CustomToggleButton(
     val trackColor: Color = BorderColor
     val gapBetweenThumbAndTrackEdge: Dp = 5.dp
     val borderWidth: Dp = 1.dp
-    val cornerSize: Int = 50
+    val cornerSize = 50
     val iConInnerPadding: Dp = 4.dp
     val switchSize: Dp = 40.dp
 
@@ -553,8 +554,9 @@ fun ChecklistWriteBoard(
                         modifier = Modifier
                             .width(210.dp)
                             .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(Red2),
+                        colors = ButtonDefaults.buttonColors(ConfirmButton),
                         onClick = {
+                            //TODO text와 myDayOfWeek 검증 필요함 없을 경우 Toast를 하나 띄워줄 것 CustomSnackBar
                             //수정일 시
                             if(index != -1) {
                                 clVM.checkList[index].checklistContent = text
@@ -646,7 +648,7 @@ fun CustomAlertDialog(
                     modifier = Modifier
                         .width(buttonWidth)
                         .height(buttonHeight),
-                    colors = ButtonDefaults.buttonColors(Red2),
+                    colors = ButtonDefaults.buttonColors(ConfirmButton),
                     onClick = positiveEvent
                 ) {
                     Text(

@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FloatingActionButton
@@ -47,9 +49,12 @@ import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.CustomSnackBar
+import com.weekly.weeklychecklist.ui.DraggableItem
 import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
-import com.weekly.weeklychecklist.ui.theme.Red2
-import com.weekly.weeklychecklist.ui.theme.Red4
+import com.weekly.weeklychecklist.ui.dragContainer
+import com.weekly.weeklychecklist.ui.rememberDragDropStste
+import com.weekly.weeklychecklist.ui.theme.ConfirmButton
+import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -152,7 +157,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    color = Red4,
+                    color = BoardBackground,
                     shape = RoundedCornerShape(cornerSize, cornerSize, 0, 0)
                 )
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {
@@ -225,8 +230,19 @@ fun listTodo(
     openIndex: MutableState<Int> = mutableStateOf(-1),
     openFlag: MutableState<Boolean> = mutableStateOf(false)
 ): Pair<MutableState<Boolean>, MutableState<Int>> {
+    val listState = rememberLazyListState()
+    val dragDropState = rememberDragDropStste(listState){ fromIndex, toIndex ->
+        clVM.checkList = clVM.checkList.apply {
+            val text = this[fromIndex]
+            this[fromIndex] = this[toIndex]
+            this[toIndex] = text
+        }
+    }
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .dragContainer(dragDropState),
+        state = listState,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         //리사이클러뷰
@@ -234,32 +250,36 @@ fun listTodo(
             count = clVM.checkList.size,
             key = { item: Int -> clVM.checkList[item].id },
         ) { index ->
-            val currentItem by rememberUpdatedState(newValue = clVM.checkList[index])
-            //체크리스트(스와이프) 정의
-            ChecklistSwipable(
-                modifier = Modifier
-                    .animateItemPlacement(
-                        animationSpec = tween(
-                            durationMillis = 500,
-                            easing = LinearOutSlowInEasing,
-                        )
-                    )//TODO basicMarquee
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        openIndex.value = index
-                        openFlag.value = !openFlag.value
-                    },
-                item = clVM.checkList[index],
-                index = index,
-            ) {
-                CoroutineScope(Dispatchers.Default).launch {
-                    //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
-                    delay(300L)
-                    //스와이프 시 삭제
-                    clVM.checkList.remove(currentItem)
-                    clVM.idList.remove(currentItem.id)
-                    clVM.resetCheckListId()
-                    clVM.isSwipe.value = true
+            DraggableItem(dragDropState = dragDropState, index = index) { isDragging ->
+//                val elevation by animateDpAsState(if (isDragging) 4.dp else 1.dp)
+
+                val currentItem by rememberUpdatedState(newValue = clVM.checkList[index])
+                //체크리스트(스와이프) 정의
+                ChecklistSwipable(
+                    modifier = Modifier
+                        .animateItemPlacement(
+                            animationSpec = tween(
+                                durationMillis = 500,
+                                easing = LinearOutSlowInEasing,
+                            )
+                        )//TODO basicMarquee
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            openIndex.value = index
+                            openFlag.value = !openFlag.value
+                        },
+                    item = clVM.checkList[index],
+                    index = index,
+                ) {
+                    CoroutineScope(Dispatchers.Default).launch {
+                        //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                        delay(300L)
+                        //스와이프 시 삭제
+                        clVM.checkList.remove(currentItem)
+                        clVM.idList.remove(currentItem.id)
+                        clVM.resetCheckListId()
+                        clVM.isSwipe.value = true
+                    }
                 }
             }
         }
@@ -281,7 +301,7 @@ fun FloatingActions(context: Context, clVM: CheckListViewModel) {
         FloatingActionButton(
             modifier = Modifier.size(70.dp),
             shape = CircleShape,
-            containerColor = Red2,
+            containerColor = ConfirmButton,
             onClick = {
                 isPressed.value = !isPressed.value
             },
