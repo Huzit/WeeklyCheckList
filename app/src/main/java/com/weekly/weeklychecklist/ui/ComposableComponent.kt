@@ -132,7 +132,6 @@ fun CheckListBox(
                             height = height
                         )
                         .background(
-                            //뒷 배경
                             color = SuperLightGray,
                             shape = RoundedCornerShape(percent = cornerSize),
                         )
@@ -165,9 +164,10 @@ fun CheckListBox(
             var resultWeeks = ""
             //sort
             val myDayOfWeek = listOf<String>("월", "화", "수", "목", "금", "토", "일")
-            myDayOfWeek.forEach { week ->
-                if (weeks.contains(week))
-                    result.append("$week ")
+
+            for(day in myDayOfWeek){
+                if(weeks.contains(day))
+                    result.append("$day ")
             }
             if (result.isNotEmpty())
                 resultWeeks = result.deleteCharAt(result.lastIndex).toString()
@@ -193,7 +193,7 @@ fun ChecklistSwipable(
     modifier: Modifier,
     item: CheckListInfo,
     index: Int,
-    dismissToDelete: () -> Unit,
+    dismissToDelete: () -> Boolean,
 ) {
     val dismissState = rememberDismissState(
         initialValue = DismissValue.Default,
@@ -202,7 +202,6 @@ fun ChecklistSwipable(
             if (it == DismissValue.DismissedToStart) {
                 //삭제이벤트
                 dismissToDelete()
-                true
             } else {
                 false
             }
@@ -649,7 +648,7 @@ fun CustomAlertDialog(
                         .width(buttonWidth)
                         .height(buttonHeight),
                     colors = ButtonDefaults.buttonColors(ConfirmButton),
-                    onClick = positiveEvent
+                    onClick = negativeEvent
                 ) {
                     Text(
                         text = "취소",
@@ -663,7 +662,7 @@ fun CustomAlertDialog(
                         .width(buttonWidth)
                         .height(buttonHeight),
                     colors = ButtonDefaults.buttonColors(Color.LightGray),
-                    onClick = negativeEvent
+                    onClick = positiveEvent
                 ) {
                     Text(
                         text = "확인",

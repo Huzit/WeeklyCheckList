@@ -3,11 +3,12 @@ package com.weekly.weeklychecklist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
+import com.weekly.weeklychecklist.ui.CustomAlertDialog
 import com.weekly.weeklychecklist.ui.CustomSnackBar
 import com.weekly.weeklychecklist.ui.DraggableItem
 import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
@@ -65,6 +67,9 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val clVM: CheckListViewModel by viewModels()
+
+    var backPressedCount = 0
+    var pressedTime = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,10 +99,36 @@ class MainActivity : ComponentActivity() {
                     setCheckListId(checkList.last().id)
             }
         }
+
+        onBackPressedDispatcher.addCallback(backPressedCallBack(this))
     }
 
-    override fun onBackPressed() {
-
+    //뒤로가기 콜백
+    private fun backPressedCallBack(context: Context) = object: OnBackPressedCallback(true){
+        override fun handleOnBackPressed() {
+            backPressedCount++
+            when(backPressedCount){
+                1 -> {
+                    CoroutineScope(Dispatchers.Default).launch {
+                        delay(2000)
+                        if(backPressedCount == 2)
+                            return@launch
+                        else
+                            backPressedCount = 0
+                    }
+                    pressedTime = System.currentTimeMillis()
+                    Toast.makeText(context, "한 번 더 누르면 앱을 종료합니다", Toast.LENGTH_SHORT).show()
+                }
+                2 -> {
+                    if(System.currentTimeMillis() > pressedTime + 2000){
+                        backPressedCount = 0
+                    } else{
+                        backPressedCount = 0
+                        finish()
+                    }
+                }
+            }
+        }
     }
 
     override fun onResume() {
@@ -251,9 +282,8 @@ fun listTodo(
             key = { item: Int -> clVM.checkList[item].id },
         ) { index ->
             DraggableItem(dragDropState = dragDropState, index = index) { isDragging ->
-//                val elevation by animateDpAsState(if (isDragging) 4.dp else 1.dp)
-
                 val currentItem by rememberUpdatedState(newValue = clVM.checkList[index])
+                var dialogVisible = remember {mutableStateOf(false)}
                 //체크리스트(스와이프) 정의
                 ChecklistSwipable(
                     modifier = Modifier
@@ -262,7 +292,7 @@ fun listTodo(
                                 durationMillis = 500,
                                 easing = LinearOutSlowInEasing,
                             )
-                        )//TODO basicMarquee
+                        )
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             openIndex.value = index
@@ -271,15 +301,26 @@ fun listTodo(
                     item = clVM.checkList[index],
                     index = index,
                 ) {
-                    CoroutineScope(Dispatchers.Default).launch {
-                        //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
-                        delay(300L)
-                        //스와이프 시 삭제
-                        clVM.checkList.remove(currentItem)
-                        clVM.idList.remove(currentItem.id)
-                        clVM.resetCheckListId()
-                        clVM.isSwipe.value = true
-                    }
+                    dialogVisible.value = true
+                    true
+                }
+                if(dialogVisible.value) {
+                    CustomAlertDialog(
+                        message = "삭제하시겠습니까?",
+                        positiveEvent = {
+                            clVM.swipRemoveFlag.value = true
+                            CoroutineScope(Dispatchers.Default).launch {
+                                //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                                delay(300L)
+                                //스와이프 시 삭제
+                                clVM.checkList.remove(currentItem)
+                                clVM.idList.remove(currentItem.id)
+                                clVM.resetCheckListId()
+                            }
+                        },
+                        negativeEvent = {
+                            dialogVisible.value = false
+                        })
                 }
             }
         }
