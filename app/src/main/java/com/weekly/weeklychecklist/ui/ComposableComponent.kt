@@ -193,7 +193,7 @@ fun ChecklistSwipable(
     modifier: Modifier,
     item: CheckListInfo,
     index: Int,
-    dismissToDelete: () -> Boolean,
+    dismissToDelete: () -> Unit,
 ) {
     val dismissState = rememberDismissState(
         initialValue = DismissValue.Default,
@@ -202,6 +202,7 @@ fun ChecklistSwipable(
             if (it == DismissValue.DismissedToStart) {
                 //삭제이벤트
                 dismissToDelete()
+                true
             } else {
                 false
             }

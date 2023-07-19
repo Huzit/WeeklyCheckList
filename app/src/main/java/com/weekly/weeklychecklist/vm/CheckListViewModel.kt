@@ -37,8 +37,6 @@ class CheckListViewModel(): ViewModel() {
         return sb.toString()
     }
 
-    fun resetCheckListId() = idList.keys.max()
-
     fun setCheckListId(id: Int){
         checkListId = id
     }

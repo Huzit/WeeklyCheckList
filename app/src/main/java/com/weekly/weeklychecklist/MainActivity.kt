@@ -3,6 +3,7 @@ package com.weekly.weeklychecklist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -36,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +60,7 @@ import com.weekly.weeklychecklist.ui.rememberDragDropStste
 import com.weekly.weeklychecklist.ui.theme.ConfirmButton
 import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
+import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -269,6 +272,12 @@ fun listTodo(
             this[toIndex] = text
         }
     }
+    var dialogVisible by remember {mutableStateOf(false)}
+    /** 0: 삭제할 객체, 1: 인덱스 */
+    val currentItem = rememberUpdatedState(newValue = arrayListOf(CheckListInfo(-1, "", setOf(MyDayOfWeek.널)), 0))
+    var currentIndex by remember {mutableStateOf(-1)}
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -281,49 +290,50 @@ fun listTodo(
             count = clVM.checkList.size,
             key = { item: Int -> clVM.checkList[item].id },
         ) { index ->
+            Log.d("index", index.toString())
             DraggableItem(dragDropState = dragDropState, index = index) { isDragging ->
-                val currentItem by rememberUpdatedState(newValue = clVM.checkList[index])
-                var dialogVisible = remember {mutableStateOf(false)}
                 //체크리스트(스와이프) 정의
                 ChecklistSwipable(
                     modifier = Modifier
-                        .animateItemPlacement(
-                            animationSpec = tween(
-                                durationMillis = 500,
-                                easing = LinearOutSlowInEasing,
-                            )
-                        )
                         .clip(RoundedCornerShape(12.dp))
                         .clickable {
                             openIndex.value = index
                             openFlag.value = !openFlag.value
-                        },
+                        }
+                        .animateItemPlacement(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = LinearOutSlowInEasing,
+                            )
+                        ),
                     item = clVM.checkList[index],
                     index = index,
                 ) {
-                    dialogVisible.value = true
-                    true
-                }
-                if(dialogVisible.value) {
-                    CustomAlertDialog(
-                        message = "삭제하시겠습니까?",
-                        positiveEvent = {
-                            clVM.swipRemoveFlag.value = true
-                            CoroutineScope(Dispatchers.Default).launch {
-                                //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
-                                delay(300L)
-                                //스와이프 시 삭제
-                                clVM.checkList.remove(currentItem)
-                                clVM.idList.remove(currentItem.id)
-                                clVM.resetCheckListId()
-                            }
-                        },
-                        negativeEvent = {
-                            dialogVisible.value = false
-                        })
+//                    currentItem.value[0] = clVM.checkList[index]
+                    currentIndex = index
+                    dialogVisible = true
                 }
             }
         }
+    }
+    if(dialogVisible) {
+        CustomAlertDialog(
+            message = "삭제하시겠습니까?",
+            positiveEvent = {
+                dialogVisible = false
+                clVM.swipRemoveFlag.value = true
+                CoroutineScope(Dispatchers.Default).launch {
+                    //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                    delay(500L)
+                    //스와이프 시 삭제
+                    Log.d("삭제된 인덱스", "$currentIndex")
+                    clVM.checkList.removeAt(currentIndex)
+//                    clVM.idList.remove(currentItem.value[1])
+                }
+            },
+            negativeEvent = {
+                dialogVisible = false
+            })
     }
     return Pair(openFlag, openIndex)
 }
