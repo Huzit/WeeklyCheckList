@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import java.time.DayOfWeek
@@ -25,7 +26,7 @@ class CheckListViewModel(): ViewModel() {
     //무결성 검증을 위한 ID 리스트
     val idList = mutableMapOf<Int, Boolean>()
 
-    var swipRemoveFlag = mutableStateOf(false)
+    var swipRemoveFlag = MutableLiveData(true)
 
     private var checkListId = 0
 

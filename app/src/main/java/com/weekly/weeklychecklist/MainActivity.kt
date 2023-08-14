@@ -44,11 +44,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.CustomAlertDialog
@@ -127,6 +129,7 @@ class MainActivity : ComponentActivity() {
                         backPressedCount = 0
                     } else{
                         backPressedCount = 0
+//                        finishAffinity()
                         finish()
                     }
                 }
@@ -274,8 +277,9 @@ fun listTodo(
     }
     var dialogVisible by remember {mutableStateOf(false)}
     /** 0: 삭제할 객체, 1: 인덱스 */
-    val currentItem = rememberUpdatedState(newValue = arrayListOf(CheckListInfo(-1, "", setOf(MyDayOfWeek.널)), 0))
+//    val currentItem = rememberUpdatedState(newValue = arrayListOf(CheckListInfo(-1, "", setOf(MyDayOfWeek.널)), 0))
     var currentIndex by remember {mutableStateOf(-1)}
+    lateinit var currentItem: CheckListInfo
 
 
     LazyColumn(
@@ -290,7 +294,6 @@ fun listTodo(
             count = clVM.checkList.size,
             key = { item: Int -> clVM.checkList[item].id },
         ) { index ->
-            Log.d("index", index.toString())
             DraggableItem(dragDropState = dragDropState, index = index) { isDragging ->
                 //체크리스트(스와이프) 정의
                 ChecklistSwipable(
@@ -311,6 +314,7 @@ fun listTodo(
                 ) {
 //                    currentItem.value[0] = clVM.checkList[index]
                     currentIndex = index
+//                    currentItem = clVM.checkList[index]
                     dialogVisible = true
                 }
             }
@@ -325,14 +329,15 @@ fun listTodo(
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
                     delay(500L)
-                    //스와이프 시 삭제
-                    Log.d("삭제된 인덱스", "$currentIndex")
+//                    Log.d("삭제된 인덱스", "$currentIndex")
                     clVM.checkList.removeAt(currentIndex)
 //                    clVM.idList.remove(currentItem.value[1])
                 }
             },
             negativeEvent = {
-                dialogVisible = false
+
+//                clVM.swipRemoveFlag.value = false
+//                dialogVisible = false
             })
     }
     return Pair(openFlag, openIndex)
