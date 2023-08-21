@@ -2,6 +2,7 @@ package com.weekly.weeklychecklist.ui
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -426,7 +427,6 @@ fun weekSelectButton(
 //체크리스트 작성 보드 + 애니메이션
 @Composable
 fun checkListWriteBoardWithBackGround(
-    context: Context,
     clVM: CheckListViewModel,
     index: Int = -1,
     isPressed: MutableState<Boolean>,
@@ -462,13 +462,13 @@ fun checkListWriteBoardWithBackGround(
     ) {
         //수정 시
         if(index > -1)
-            ChecklistWriteBoard(main = context, clVM = clVM, index = index) {
+            ChecklistWriteBoard(clVM = clVM, index = index) {
                 //확인 클릭 시
                 mIsPressed.value = false
             }
         //새로 생성
         else
-            ChecklistWriteBoard(main = context, clVM = clVM) {
+            ChecklistWriteBoard(clVM = clVM) {
                 //확인 클릭 시
                 mIsPressed.value = false
             }
@@ -478,7 +478,6 @@ fun checkListWriteBoardWithBackGround(
 //체크리스트 입력 보드
 @Composable
 fun ChecklistWriteBoard(
-    main: Context,
     clVM: CheckListViewModel,
     index: Int = -1,
     height: Dp = 350.dp,
@@ -487,7 +486,8 @@ fun ChecklistWriteBoard(
 ) {
     var text = if(index == -1) "" else clVM.checkList[index].checklistContent
     var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
-    val db = CheckListDatabaseRepository.getInstance(main)
+    val db = CheckListDatabaseRepository.getInstance(LocalContext.current)
+    var buttonFlag by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier
@@ -566,36 +566,53 @@ fun ChecklistWriteBoard(
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(ConfirmButton),
                         onClick = {
-                            //TODO text와 myDayOfWeek 검증 필요함 없을 경우 Toast를 하나 띄워줄 것 CustomSnackBar
-                            //수정일 시
-                            if(index != -1) {
-                                clVM.checkList[index].checklistContent = text
-                                clVM.checkList[index].restartWeek = myDayOfWeek
-                                Log.d(javaClass.simpleName, "수정한 ID : ${clVM.checkList[index].id}")
-                            }
-                            //새로 작성일 시
-                            else {
-                                val id = clVM.getCheckListId()
-                                clVM.checkList.add(
-                                    CheckListInfo(
-                                        id,
-                                        text,
-                                        myDayOfWeek
+                            //요일, 내용 검증
+                            if(text.isNotEmpty() && myDayOfWeek.isNotEmpty()){
+                                buttonFlag = false
+                                //새로작성
+                                if(index == -1) {
+                                    val id = clVM.getCheckListId()
+                                    clVM.checkList.add(
+                                        CheckListInfo(
+                                            id,
+                                            text,
+                                            myDayOfWeek
+                                        )
                                     )
+                                }
+                                //수정
+                                else {
+                                    clVM.checkList[index].checklistContent = text
+                                    clVM.checkList[index].restartWeek = myDayOfWeek
+                                }
+                                clVM.isUpdated = false
+                                db.updateDatabase(
+                                    clVM.listName.value,
+                                    clVM.checkList,
+                                    clVM.isUpdated,
+                                    clVM.lastUpdatedDate
                                 )
-                                Log.d(javaClass.simpleName, "새로 작성한 ID : $id")
-                            }
-                            clVM.isUpdated = false
-                            db.updateDatabase(
-                                clVM.listName.value,
-                                clVM.checkList,
-                                clVM.isUpdated,
-                                clVM.lastUpdatedDate
-                            )
-                            //창 닫는 콜백
-                            buttonOnClick()
+                                //창 닫는 콜백
+                                buttonOnClick()
+                            } else
+                                buttonFlag = true
                         }
                     ) {
+                        if(buttonFlag) {
+                            if (text.isEmpty())
+                                Toast.makeText(
+                                    LocalContext.current,
+                                    "할일이 비었습니다",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            else if (myDayOfWeek.isEmpty())
+                                Toast.makeText(
+                                    LocalContext.current,
+                                    "요일이 비었습니다",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                        }
+
                         Text(
                             text = "확인",
                             fontWeight = FontWeight.Bold,
@@ -740,7 +757,7 @@ fun SwitchPreview() {
         weekSelectButton(MyDayOfWeek.널)
         CustomToggleButton(isCheck = true, 0)
         CustomToggleButton(isCheck = false, 0)
-        ChecklistWriteBoard(main = context, clVM = CheckListViewModel()) {}
+        ChecklistWriteBoard(clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
         CheckListBox(

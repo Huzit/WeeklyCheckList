@@ -26,7 +26,6 @@ class CheckListViewModel(): ViewModel() {
     //무결성 검증을 위한 ID 리스트
     val idList = mutableMapOf<Int, Boolean>()
 
-    var swipRemoveFlag = MutableLiveData(true)
 
     private var checkListId = 0
 
@@ -60,11 +59,7 @@ class CheckListViewModel(): ViewModel() {
          ***/
         if(lastUpdatedDate.isBefore(LocalDate.now()))
             isUpdated = false
-        Log.d("업데이트 됨?", isUpdated.toString())
-
         val passedWeek = getBetweenWeek(lastUpdatedDate)
-
-        Log.d("지난날짜", passedWeek.size.toString())
 
         //일주일 이상 지났을 시 전체 초기화
         if(passedWeek.size >= 7){
@@ -84,12 +79,12 @@ class CheckListViewModel(): ViewModel() {
                             item.done = false
                         }
                     }
-                }
-                //마지막 일 시
-                if (index == checkList.size - 1) {
-                    isUpdated = true
-                    lastUpdatedDate = LocalDate.now()
-                    return
+                    //마지막 일 시
+                    if (index == checkList.size - 1) {
+                        isUpdated = true
+                        lastUpdatedDate = LocalDate.now()
+                        return
+                    }
                 }
             }
         }

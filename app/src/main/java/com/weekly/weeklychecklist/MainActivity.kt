@@ -250,7 +250,6 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
             )
             //체크리스트 작성 보드
             openFlag = checkListWriteBoardWithBackGround(
-                context = context,
                 clVM = clVM,
                 isPressed = openFlag,
                 index = openIndex.value
@@ -276,11 +275,7 @@ fun listTodo(
         }
     }
     var dialogVisible by remember {mutableStateOf(false)}
-    /** 0: 삭제할 객체, 1: 인덱스 */
-//    val currentItem = rememberUpdatedState(newValue = arrayListOf(CheckListInfo(-1, "", setOf(MyDayOfWeek.널)), 0))
     var currentIndex by remember {mutableStateOf(-1)}
-    lateinit var currentItem: CheckListInfo
-
 
     LazyColumn(
         modifier = Modifier
@@ -312,9 +307,7 @@ fun listTodo(
                     item = clVM.checkList[index],
                     index = index,
                 ) {
-//                    currentItem.value[0] = clVM.checkList[index]
                     currentIndex = index
-//                    currentItem = clVM.checkList[index]
                     dialogVisible = true
                 }
             }
@@ -324,20 +317,22 @@ fun listTodo(
         CustomAlertDialog(
             message = "삭제하시겠습니까?",
             positiveEvent = {
-                dialogVisible = false
-                clVM.swipRemoveFlag.value = true
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                    val current = clVM.checkList[currentIndex]
                     delay(500L)
-//                    Log.d("삭제된 인덱스", "$currentIndex")
-                    clVM.checkList.removeAt(currentIndex)
-//                    clVM.idList.remove(currentItem.value[1])
+                    clVM.checkList.remove(current)
                 }
+                dialogVisible = false
             },
             negativeEvent = {
-
-//                clVM.swipRemoveFlag.value = false
-//                dialogVisible = false
+                //현재 체크리스트 삭제
+                val current = clVM.checkList[currentIndex]
+                clVM.checkList.remove(current)
+                //id 변경(LazyColumn이 state 로 pk를 가지고 있기 때문에 새 pk를 할당해 줘야 이전 상태를 가져오지 않음)
+                current.id = clVM.getCheckListId()
+                clVM.checkList.add(currentIndex, current)
+                dialogVisible = false
             })
     }
     return Pair(openFlag, openIndex)
@@ -370,7 +365,7 @@ fun FloatingActions(context: Context, clVM: CheckListViewModel) {
         }
     }
     //플로팅 버튼 클릭 이벤트
-    isPressed = checkListWriteBoardWithBackGround(context = context, clVM = clVM, isPressed = isPressed)
+    isPressed = checkListWriteBoardWithBackGround(clVM = clVM, isPressed = isPressed)
 }
 
 @Preview(showBackground = true, showSystemUi = true)
