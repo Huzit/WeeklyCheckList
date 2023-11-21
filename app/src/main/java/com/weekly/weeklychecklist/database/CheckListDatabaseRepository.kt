@@ -34,7 +34,9 @@ class CheckListDatabaseRepository(private val context: Context) {
     }
 
     //select
-    fun getDatabase(listName: String): CheckListEntity = runBlocking { dao.getCheckList(listName) }
+    suspend fun getDatabase(listName: String): List<CheckListEntity> {
+        return dao.getCheckList(listName)
+    }
 
     //update
     fun updateDatabase(listName: String, clInfo: List<CheckListInfo>, isUpdated: Boolean, lastUpdatedDate: LocalDate) = CoroutineScope(Dispatchers.IO).launch{

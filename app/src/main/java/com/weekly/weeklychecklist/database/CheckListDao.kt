@@ -13,7 +13,7 @@ interface CheckListDao {
     suspend fun insertCheckList(vararg checkListEntity: CheckListEntity)
 
     @Query("SELECT * FROM checklist WHERE list_name = :listName ")
-    suspend fun getCheckList(vararg listName: String): CheckListEntity
+    suspend fun getCheckList(vararg listName: String): List<CheckListEntity>
 
     @Query("DELETE FROM checklist WHERE list_name = :listName")
     suspend fun deleteCheckList(vararg listName: String)
