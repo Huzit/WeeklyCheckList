@@ -578,7 +578,7 @@ fun ChecklistWriteBoard(
                                     clVM.checkList[index].restartWeek = myDayOfWeek
                                 }
                                 clVM.isUpdated = false
-                                db.updateDatabase(
+                                db.updateCheckList(
                                     clVM.listName.value,
                                     clVM.checkList,
                                     clVM.isUpdated,

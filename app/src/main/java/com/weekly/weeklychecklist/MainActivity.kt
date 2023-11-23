@@ -3,7 +3,6 @@ package com.weekly.weeklychecklist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -36,7 +35,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
@@ -44,13 +42,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat.startActivity
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.ChecklistSwipable
 import com.weekly.weeklychecklist.ui.CustomAlertDialog
@@ -62,7 +58,6 @@ import com.weekly.weeklychecklist.ui.rememberDragDropStste
 import com.weekly.weeklychecklist.ui.theme.ConfirmButton
 import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
-import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +80,7 @@ class MainActivity : ComponentActivity() {
         //DB init
         val db = CheckListDatabaseRepository.getInstance(this)
         db.initDatabase()
-        val default = db.getDatabase("default")
+        val default = db.getCheckList("default")
 
         //DB get
         if (default != null) {
@@ -129,7 +124,6 @@ class MainActivity : ComponentActivity() {
                         backPressedCount = 0
                     } else{
                         backPressedCount = 0
-//                        finishAffinity()
                         finish()
                     }
                 }
@@ -147,11 +141,11 @@ class MainActivity : ComponentActivity() {
             startActivity(Intent(this, MainActivity::class.java))
         }
     }
-    //종료 시 자동 저장
+
     override fun onPause() {
         clVM.restartMainActivity = true
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(
+            .updateCheckList(
                 clVM.listName.value,
                 clVM.checkList,
                 clVM.isUpdated,
@@ -162,7 +156,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         CheckListDatabaseRepository.getInstance(this)
-            .updateDatabase(
+            .updateCheckList(
                 clVM.listName.value,
                 clVM.checkList,
                 clVM.isUpdated,

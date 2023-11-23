@@ -29,3 +29,25 @@ open class SingletonHolder<out T, in A>(creator: (A) -> T) {
         }
     }
 }
+
+open class SingletonHolderNoProperty<out T>(creator: () -> T){
+    private var _creator: (() -> T)? = creator
+    @Volatile
+    private var instance: T? = null
+
+    fun getInstance(): T{
+        val checkInstance = instance
+        if(checkInstance != null)
+            return checkInstance
+        return synchronized(this){
+            val checkInstanceAgain = instance
+            if(checkInstanceAgain != null)
+                return checkInstanceAgain
+            else {
+                val created = _creator!!()
+                _creator = null
+                created
+            }
+        }
+    }
+}
