@@ -4,15 +4,23 @@ import android.content.Context
 import android.util.Log
 import androidx.room.Room
 import com.weekly.weeklychecklist.MyDayOfWeek
+import com.weekly.weeklychecklist.database.dao.CheckListDao
+import com.weekly.weeklychecklist.database.dao.CheckListUpdateDao
+import com.weekly.weeklychecklist.database.entity.CheckListEntity
+import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
+import com.weekly.weeklychecklist.util.SingletonHolderNoProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class CheckListDatabaseRepository() {
+    private val TAG = javaClass.simpleName
     private lateinit var db: CheckListDatabase
-    private lateinit var dao: CheckListDao
+    private lateinit var checkListDao: CheckListDao
+    private lateinit var checkListUpdateDao: CheckListUpdateDao
 
     companion object: SingletonHolderNoProperty<CheckListDatabaseRepository>(::CheckListDatabaseRepository)
 
@@ -21,9 +29,28 @@ class CheckListDatabaseRepository() {
         db = Room.databaseBuilder(
             context,
             CheckListDatabase::class.java,
-            "checklist"
+            "CheckListDatabase"
         ).build()
-        dao = db.checklistDao()
+        checkListDao = db.checkListDao()
+        checkListUpdateDao = db.checkListUpdateDao()
+    }
+    
+    suspend fun insertCheckListUpdate(
+        listName: String,
+        isUpdated: Boolean,
+        registerTime: LocalDateTime
+    ){
+        try{
+            checkListUpdateDao.insertCheckListUpdate(
+                CheckListUpdateEntity(
+                    listName,
+                    isUpdated,
+                    registerTime
+                )
+            )
+        }catch (e: RuntimeException){
+            Log.e(TAG, "이미 존재 하는 테이블 입니다. ${e.stackTraceToString()}")
+        }
     }
 
     suspend fun insertCheckList(
@@ -35,24 +62,28 @@ class CheckListDatabaseRepository() {
         lastUpdatedDate: LocalDate
     ) {
         try {
-            dao.insertCheckList(
+            checkListDao.insertCheckList(
                 CheckListEntity(
                     listName,
                     checkListContent,
                     restartWeek,
                     done,
-                    isUpdated,
+//                    isUpdated,
                     lastUpdatedDate
                 )
             )
         } catch (e: RuntimeException) {
-            Log.e("WeeklyCheckList " + javaClass.simpleName, "이미 존재 하는 테이블 입니다.")
+            Log.e(TAG, "이미 존재 하는 테이블 입니다. ${e.stackTraceToString()}")
         }
     }
 
     //select
-    suspend fun getCheckList(listName: String): List<CheckListEntity> {
-        return dao.getCheckList(listName)
+    fun getCheckList(listName: String): ArrayList<CheckListEntity> {
+        return checkListDao.getCheckList(listName)
+    }
+    
+    fun getCheckListUpdate(listName: String): ArrayList<CheckListUpdateEntity> {
+        return checkListUpdateDao.getCheckListUpdated(listName)
     }
 
     //update
@@ -65,7 +96,7 @@ class CheckListDatabaseRepository() {
         lastUpdatedDate: LocalDate
     ) {
         try {
-            val checkList = dao.getCheckList(listName)
+            val checkList = checkListDao.getCheckList(listName)
             if (checkList.isEmpty()) {
                 insertCheckList(listName, checkListContent, restartWeek, done, isUpdated, lastUpdatedDate)
             }
@@ -84,7 +115,7 @@ class CheckListDatabaseRepository() {
     //delete
     fun deleteDatabase() = CoroutineScope(Dispatchers.IO).launch {
         try {
-            dao.deleteCheckList()
+            checkListDao.deleteCheckList()
         } catch (e: IOException) {
             Log.e(javaClass.simpleName, "Database Delete is Failed")
         }

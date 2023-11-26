@@ -2,19 +2,18 @@ package com.weekly.weeklychecklist.vm
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
+import com.weekly.weeklychecklist.database.entity.CheckListEntity
+import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 class CheckListViewModel() : ViewModel() {
-    var checkList = mutableStateListOf<CheckListInfo>()
+    var checkList = mutableStateListOf<CheckListEntity>()
     var listName = mutableStateOf<String>("default")
     var isUpdated: Boolean = false
     var lastUpdatedDate: LocalDate = LocalDate.now()
@@ -23,11 +22,11 @@ class CheckListViewModel() : ViewModel() {
 
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
-    private val checkListDatabaseRepository = CheckListDatabaseRepository.getInstance()
+    private val checkListRepository = CheckListDatabaseRepository.getInstance()
 
 
     private var checkListId = 0
-
+    
     fun checklistToString(): String {
         val sb = StringBuilder()
         checkList.forEach {
@@ -35,6 +34,14 @@ class CheckListViewModel() : ViewModel() {
         }
         return sb.toString()
     }
+    
+    fun getCheckList(
+        listName: String
+    ): ArrayList<CheckListEntity> = checkListRepository.getCheckList(listName)
+    
+    fun getCheckListUpdate(
+        listName: String
+    ): ArrayList<CheckListUpdateEntity> = checkListRepository.getCheckListUpdate(listName)
 
     fun insertCheckList(
         listName: String,
@@ -44,7 +51,7 @@ class CheckListViewModel() : ViewModel() {
         isUpdated: Boolean,
         lastUpdatedDate: LocalDate
     ) = viewModelScope.launch {
-        checkListDatabaseRepository.insertCheckList(
+        checkListRepository.insertCheckList(
             listName,
             checkListContent,
             restartWeek,
@@ -62,7 +69,7 @@ class CheckListViewModel() : ViewModel() {
         isUpdated: Boolean,
         lastUpdatedDate: LocalDate
     ) = viewModelScope.launch {
-        checkListDatabaseRepository.updateCheckList(
+        checkListRepository.updateCheckList(
             listName,
             checkListContent,
             restartWeek,

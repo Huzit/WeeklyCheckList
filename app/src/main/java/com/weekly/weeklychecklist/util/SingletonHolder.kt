@@ -1,4 +1,4 @@
-package com.weekly.weeklychecklist.database
+package com.weekly.weeklychecklist.util
 
 open class SingletonHolder<out T, in A>(creator: (A) -> T) {
     //참조객체

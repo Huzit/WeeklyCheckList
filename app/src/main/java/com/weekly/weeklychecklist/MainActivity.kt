@@ -78,16 +78,18 @@ class MainActivity : ComponentActivity() {
         }
 
         //DB init
-        val db = CheckListDatabaseRepository.getInstance(this)
-        db.initDatabase()
-        val default = db.getCheckList("default")
+        val db = CheckListDatabaseRepository.getInstance()
+        db.initDatabase(this)
+        
+        val clList = clVM.getCheckList("default")
+        val clUpdate = clVM.getCheckListUpdate("default")
 
         //DB get
-        if (default != null) {
+        if (clList.isNotEmpty()) {
             clVM.apply {
-                checkList = default.checkLists.toMutableStateList()
-                isUpdated = default.isUpdated
-                lastUpdatedDate = default.lastUpdatedDate
+                checkList = clList.toMutableStateList()
+                isUpdated = clList.isUpdated
+                lastUpdatedDate = clList.lastUpdatedDate
 
                 checkList.forEach { list ->
                     idList[list.id] = true

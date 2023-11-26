@@ -198,7 +198,7 @@ fun ChecklistSwipable(
     val clVM = viewModel<CheckListViewModel>()
 
     Log.d("currentIndex", "$index")
-    var dismissState = rememberDismissState(
+    val dismissState = rememberDismissState(
         initialValue = DismissValue.Default,
         confirmStateChange = {
             //Start로 dismiss시
@@ -478,7 +478,7 @@ fun ChecklistWriteBoard(
 ) {
     var text = if(index == -1) "" else clVM.checkList[index].checklistContent
     var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
-    val db = CheckListDatabaseRepository.getInstance(LocalContext.current)
+    val checkListRepository = CheckListDatabaseRepository.getInstance()
     var buttonFlag by remember { mutableStateOf(false) }
 
     Surface(
@@ -578,12 +578,13 @@ fun ChecklistWriteBoard(
                                     clVM.checkList[index].restartWeek = myDayOfWeek
                                 }
                                 clVM.isUpdated = false
-                                db.updateCheckList(
-                                    clVM.listName.value,
-                                    clVM.checkList,
-                                    clVM.isUpdated,
-                                    clVM.lastUpdatedDate
-                                )
+
+//                                db.updateCheckList(
+//                                    clVM.listName.value,
+//                                    clVM.checkList,
+//                                    clVM.isUpdated,
+//                                    clVM.lastUpdatedDate
+//                                )
                                 //창 닫는 콜백
                                 buttonOnClick()
                             } else
