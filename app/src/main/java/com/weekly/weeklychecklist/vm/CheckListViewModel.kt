@@ -11,18 +11,19 @@ import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class CheckListViewModel() : ViewModel() {
     var checkList = mutableStateListOf<CheckListEntity>()
     var listName = mutableStateOf<String>("default")
-    var isUpdated: Boolean = false
+    var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     var lastUpdatedDate: LocalDate = LocalDate.now()
     val isSwipe = mutableStateOf(false)
     val idList = mutableMapOf<Int, Boolean>()
 
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
-    private val checkListRepository = CheckListDatabaseRepository.getInstance()
+    private val checkListRepository = CheckListDatabaseRepository()
 
 
     private var checkListId = 0
@@ -37,19 +38,19 @@ class CheckListViewModel() : ViewModel() {
     
     fun getCheckList(
         listName: String
-    ): ArrayList<CheckListEntity> = checkListRepository.getCheckList(listName)
+    ): ArrayList<CheckListEntity> = ArrayList(checkListRepository.getCheckList(listName))
     
     fun getCheckListUpdate(
         listName: String
-    ): ArrayList<CheckListUpdateEntity> = checkListRepository.getCheckListUpdate(listName)
+    ): ArrayList<CheckListUpdateEntity> = ArrayList(checkListRepository.getCheckListUpdate(listName))
 
     fun insertCheckList(
         listName: String,
         checkListContent: String,
-        restartWeek: Set<MyDayOfWeek>,
+        restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         isUpdated: Boolean,
-        lastUpdatedDate: LocalDate
+        lastUpdatedDate: LocalDateTime
     ) = viewModelScope.launch {
         checkListRepository.insertCheckList(
             listName,
@@ -64,10 +65,10 @@ class CheckListViewModel() : ViewModel() {
     fun updateCheckList(
         listName: String,
         checkListContent: String,
-        restartWeek: Set<MyDayOfWeek>,
+        restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         isUpdated: Boolean,
-        lastUpdatedDate: LocalDate
+        lastUpdatedDate: LocalDateTime
     ) = viewModelScope.launch {
         checkListRepository.updateCheckList(
             listName,
@@ -100,7 +101,7 @@ class CheckListViewModel() : ViewModel() {
          * 만약, 포그라운드에서 하루 이상이 지난다면 onDestroy를 못 탈수도 있으므로 false
          ***/
         if (lastUpdatedDate.isBefore(LocalDate.now()))
-            isUpdated = false
+            checkListUpdate[0].isUpdate = false
         val passedWeek = getBetweenDate(lastUpdatedDate)
 
         //일주일 이상 지났을 시 전체 초기화
@@ -109,13 +110,13 @@ class CheckListViewModel() : ViewModel() {
                 item.done = false
             }
             lastUpdatedDate = LocalDate.now()
-            isUpdated = true
+            checkListUpdate[0].isUpdate = true
             return
         }
         //최근 접속일 이 일주일 미만일 시
         else {
             checkList.forEachIndexed { index, item ->
-                if (!isUpdated) {
+                if (!checkListUpdate[0].isUpdate) {
                     item.restartWeek.forEach { week ->
                         if (passedWeek.contains(week)) {
                             item.done = false
@@ -123,7 +124,7 @@ class CheckListViewModel() : ViewModel() {
                     }
                     //마지막 일 시
                     if (index == checkList.size - 1) {
-                        isUpdated = true
+                        checkListUpdate[0].isUpdate = true
                         lastUpdatedDate = LocalDate.now()
                         return
                     }

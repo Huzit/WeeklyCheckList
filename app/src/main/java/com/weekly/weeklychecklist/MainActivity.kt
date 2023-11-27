@@ -78,9 +78,9 @@ class MainActivity : ComponentActivity() {
         }
 
         //DB init
-        val db = CheckListDatabaseRepository.getInstance()
+        val db = CheckListDatabaseRepository()
         db.initDatabase(this)
-        
+        /*
         val clList = clVM.getCheckList("default")
         val clUpdate = clVM.getCheckListUpdate("default")
 
@@ -88,19 +88,16 @@ class MainActivity : ComponentActivity() {
         if (clList.isNotEmpty()) {
             clVM.apply {
                 checkList = clList.toMutableStateList()
-                isUpdated = clList.isUpdated
-                lastUpdatedDate = clList.lastUpdatedDate
-
-                checkList.forEach { list ->
-                    idList[list.id] = true
-                }
-
-                if(checkList.size == 0)
-                    setCheckListId(0)
-                else
-                    setCheckListId(checkList.last().id)
+                checkListUpdate = clUpdate
+//                checkList.forEach { list ->
+//                    idList[list.id] = true
+//                }
+//                if(checkList.size == 0)
+//                    setCheckListId(0)
+//                else
+//                    setCheckListId(checkList.last().id)
             }
-        }
+        }*/
 
         onBackPressedDispatcher.addCallback(backPressedCallBack(this))
     }
@@ -146,24 +143,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         clVM.restartMainActivity = true
-        CheckListDatabaseRepository.getInstance(this)
-            .updateCheckList(
-                clVM.listName.value,
-                clVM.checkList,
-                clVM.isUpdated,
-                clVM.lastUpdatedDate
-            )
         super.onPause()
     }
 
     override fun onDestroy() {
-        CheckListDatabaseRepository.getInstance(this)
-            .updateCheckList(
-                clVM.listName.value,
-                clVM.checkList,
-                clVM.isUpdated,
-                clVM.lastUpdatedDate
-            )
         super.onDestroy()
     }
 }
@@ -282,8 +265,7 @@ fun listTodo(
     ) {
         //리사이클러뷰
         items(
-            count = clVM.checkList.size,
-            key = { item: Int -> clVM.checkList[item].id },
+            count = clVM.checkList.size
         ) { index ->
             DraggableItem(dragDropState = dragDropState, index = index) { isDragging ->
                 //체크리스트(스와이프) 정의
@@ -301,7 +283,6 @@ fun listTodo(
                             )
                         ),
                     item = clVM.checkList[index],
-                    index = index,
                 ) {
                     currentIndex = index
                     dialogVisible = true
@@ -326,7 +307,7 @@ fun listTodo(
                 val current = clVM.checkList[currentIndex]
                 clVM.checkList.remove(current)
                 //id 변경(LazyColumn이 state 로 pk를 가지고 있기 때문에 새 pk를 할당해 줘야 이전 상태를 가져오지 않음)
-                current.id = clVM.getCheckListId()
+//                current.id = clVM.getCheckListId()
                 clVM.checkList.add(currentIndex, current)
                 dialogVisible = false
             })

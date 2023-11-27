@@ -56,10 +56,10 @@ class CheckListDatabaseRepository() {
     suspend fun insertCheckList(
         listName: String,
         checkListContent: String,
-        restartWeek: Set<MyDayOfWeek>,
+        restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         isUpdated: Boolean,
-        lastUpdatedDate: LocalDate
+        lastUpdatedDate: LocalDateTime
     ) {
         try {
             checkListDao.insertCheckList(
@@ -78,11 +78,11 @@ class CheckListDatabaseRepository() {
     }
 
     //select
-    fun getCheckList(listName: String): ArrayList<CheckListEntity> {
+    fun getCheckList(listName: String): List<CheckListEntity> {
         return checkListDao.getCheckList(listName)
     }
     
-    fun getCheckListUpdate(listName: String): ArrayList<CheckListUpdateEntity> {
+    fun getCheckListUpdate(listName: String): List<CheckListUpdateEntity> {
         return checkListUpdateDao.getCheckListUpdated(listName)
     }
 
@@ -90,10 +90,10 @@ class CheckListDatabaseRepository() {
     suspend fun updateCheckList(
         listName: String,
         checkListContent: String,
-        restartWeek: Set<MyDayOfWeek>,
+        restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         isUpdated: Boolean,
-        lastUpdatedDate: LocalDate
+        lastUpdatedDate: LocalDateTime
     ) {
         try {
             val checkList = checkListDao.getCheckList(listName)

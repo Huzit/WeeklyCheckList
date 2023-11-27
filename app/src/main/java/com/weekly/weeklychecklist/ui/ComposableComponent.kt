@@ -78,6 +78,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
+import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.CheckListBackground
@@ -91,12 +92,12 @@ import com.weekly.weeklychecklist.ui.theme.SwipeBackground
 import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.delay
+import java.time.LocalDateTime
 
 //체크리스트 항목
 @Composable
 fun CheckListBox(
-    item: CheckListInfo,
-    index: Int,
+    item: CheckListEntity,
 ) {
     val configuration = LocalConfiguration.current
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
@@ -105,6 +106,7 @@ fun CheckListBox(
     val height = 60.dp
     val cornerSize = 20
     val done = remember { mutableStateOf(item.done) }
+    val index = item.idx.toInt()
 
     Surface(
         modifier = Modifier
@@ -191,13 +193,11 @@ fun CheckListBox(
 @Composable
 fun ChecklistSwipable(
     modifier: Modifier,
-    item: CheckListInfo,
-    index: Int,
+    item: CheckListEntity,
     dismissToDelete: () -> Unit,
 ) {
     val clVM = viewModel<CheckListViewModel>()
 
-    Log.d("currentIndex", "$index")
     val dismissState = rememberDismissState(
         initialValue = DismissValue.Default,
         confirmStateChange = {
@@ -219,12 +219,12 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            CheckListBox(item = item, index = index)
+            CheckListBox(item)
         },
         background = {
-            val color by animateColorAsState(SwipeBackground.copy())
+            val color by animateColorAsState(SwipeBackground.copy(), label = "")
             val icon = painterResource(id = R.drawable.delete)
-            val scale by animateFloatAsState(1.0f)
+            val scale by animateFloatAsState(1.0f, label = "")
 
             Box(
                 modifier = Modifier
@@ -265,6 +265,7 @@ fun CustomToggleButton(
     val interactionSource = remember { MutableInteractionSource() }
     var switchOn by remember { mutableStateOf(isCheck) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
+
     //테두리 Border
     Box(
         modifier = Modifier
@@ -478,7 +479,7 @@ fun ChecklistWriteBoard(
 ) {
     var text = if(index == -1) "" else clVM.checkList[index].checklistContent
     var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
-    val checkListRepository = CheckListDatabaseRepository.getInstance()
+    val checkListRepository = CheckListDatabaseRepository()
     var buttonFlag by remember { mutableStateOf(false) }
 
     Surface(
@@ -565,10 +566,11 @@ fun ChecklistWriteBoard(
                                 if(index == -1) {
                                     val id = clVM.getCheckListId()
                                     clVM.checkList.add(
-                                        CheckListInfo(
-                                            id,
-                                            text,
-                                            myDayOfWeek
+                                        CheckListEntity(
+                                            listName = "default",
+                                            checklistContent = text,
+                                            restartWeek = myDayOfWeek,
+                                            registerTime = LocalDateTime.now()
                                         )
                                     )
                                 }
@@ -577,7 +579,7 @@ fun ChecklistWriteBoard(
                                     clVM.checkList[index].checklistContent = text
                                     clVM.checkList[index].restartWeek = myDayOfWeek
                                 }
-                                clVM.isUpdated = false
+//                                clVM.isUpdated = false
 
 //                                db.updateCheckList(
 //                                    clVM.listName.value,
@@ -753,10 +755,10 @@ fun SwitchPreview() {
         ChecklistWriteBoard(clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
-        CheckListBox(
-            item = CheckListInfo(1, "preview content", setOf(MyDayOfWeek.월), false),
-            1,
-        )
+//        CheckListBox(
+//            item = CheckListInfo(1, "preview content", setOf(MyDayOfWeek.월), false),
+//            1,
+//        )
     }
 }
 
