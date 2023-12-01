@@ -20,8 +20,6 @@ data class CheckListEntity(
     var restartWeek: MutableSet<MyDayOfWeek>,
     @ColumnInfo (name = "done")
     var done: Boolean = false,
-//    @ColumnInfo(name = "is_updated")
-//    var isUpdated: Boolean,
     @ColumnInfo("register_time")
     var registerTime: LocalDateTime
 

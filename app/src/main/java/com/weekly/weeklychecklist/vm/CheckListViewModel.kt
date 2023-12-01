@@ -25,7 +25,7 @@ class CheckListViewModel() : ViewModel() {
 
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
-    private val checkListRepository = CheckListDatabaseRepository()
+    private val checkListRepository = CheckListDatabaseRepository.getInstance()
 
 
     private var checkListId = 0
@@ -51,7 +51,6 @@ class CheckListViewModel() : ViewModel() {
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
-        isUpdated: Boolean,
         lastUpdatedDate: LocalDateTime
     ) = viewModelScope.launch {
         checkListRepository.insertCheckList(
@@ -59,7 +58,6 @@ class CheckListViewModel() : ViewModel() {
             checkListContent,
             restartWeek,
             done,
-            isUpdated,
             lastUpdatedDate
         )
     }
@@ -69,7 +67,6 @@ class CheckListViewModel() : ViewModel() {
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
-        isUpdated: Boolean,
         lastUpdatedDate: LocalDateTime
     ) = viewModelScope.launch {
         checkListRepository.updateCheckList(
@@ -77,7 +74,6 @@ class CheckListViewModel() : ViewModel() {
             checkListContent,
             restartWeek,
             done,
-            isUpdated,
             lastUpdatedDate
         )
     }

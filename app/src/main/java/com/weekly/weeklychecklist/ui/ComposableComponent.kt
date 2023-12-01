@@ -1,17 +1,20 @@
 package com.weekly.weeklychecklist.ui
 
-import android.util.Log
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,12 +31,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
-import androidx.compose.material.DismissState
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
@@ -45,6 +49,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -59,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
@@ -90,10 +96,120 @@ import com.weekly.weeklychecklist.ui.theme.Red
 import com.weekly.weeklychecklist.ui.theme.SpotColor
 import com.weekly.weeklychecklist.ui.theme.SuperLightGray
 import com.weekly.weeklychecklist.ui.theme.SwipeBackground
-import com.weekly.weeklychecklist.vm.CheckListInfo
 import com.weekly.weeklychecklist.vm.CheckListViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+
+
+//투두 리스트 리사이클러뷰
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun listTodo(
+    clVM: CheckListViewModel,
+    openIndex: MutableState<Int> = mutableStateOf(-1),
+    openFlag: MutableState<Boolean> = mutableStateOf(false)
+): Pair<MutableState<Boolean>, MutableState<Int>> {
+    val listState = rememberLazyListState()
+    val dragDropState = rememberDragDropStste(listState){ fromIndex, toIndex ->
+        clVM.checkList = clVM.checkList.apply {
+            val text = this[fromIndex]
+            this[fromIndex] = this[toIndex]
+            this[toIndex] = text
+        }
+    }
+    var dialogVisible by remember {mutableStateOf(false)}
+    var currentIndex by remember {mutableStateOf(-1)}
+    
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .dragContainer(dragDropState),
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        //리사이클러뷰
+        items(
+            count = clVM.checkList.size
+        ) { index ->
+            DraggableItem(dragDropState = dragDropState, index = index) { _ ->
+                //체크리스트(스와이프) 정의
+                ChecklistSwipable(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            openIndex.value = index
+                            openFlag.value = !openFlag.value
+                        }
+                        .animateItemPlacement(
+                            animationSpec = tween(
+                                durationMillis = 300,
+                                easing = LinearOutSlowInEasing,
+                            )
+                        ),
+                    item = clVM.checkList[index],
+                ) {
+                    currentIndex = index
+                    dialogVisible = true
+                }
+            }
+        }
+    }
+    if(dialogVisible) {
+        CustomAlertDialog(
+            message = "삭제하시겠습니까?",
+            positiveEvent = {
+                CoroutineScope(Dispatchers.Default).launch {
+                    //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
+                    val current = clVM.checkList[currentIndex]
+                    delay(500L)
+                    clVM.checkList.remove(current)
+                    //TODO Delete 쿼리
+                    
+                }
+                //롤백 트리거
+                clVM.isSwipToDeleteCancel = true
+                dialogVisible = false
+            },
+            negativeEvent = {
+                clVM.isSwipToDeleteCancel = true
+                dialogVisible = false
+            })
+    }
+    return Pair(openFlag, openIndex)
+}
+
+//플로팅 버튼
+@Composable
+fun FloatingActions(context: Context, clVM: CheckListViewModel) {
+    var isPressed = remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(80.dp)
+            .padding(bottom = 10.dp, end = 10.dp),
+        contentAlignment = Alignment.TopEnd
+    ) {
+        FloatingActionButton(
+            modifier = Modifier.size(70.dp),
+            shape = CircleShape,
+            containerColor = ConfirmButton,
+            onClick = {
+                isPressed.value = !isPressed.value
+            },
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.add),
+                tint = Color.White,
+                contentDescription = "Add"
+            )
+        }
+    }
+    //플로팅 버튼 클릭 이벤트
+    isPressed = checkListWriteBoardWithBackGround(clVM = clVM, isPressed = isPressed)
+}
 
 //체크리스트 항목
 @Composable
@@ -488,10 +604,11 @@ fun ChecklistWriteBoard(
     fontSize: TextUnit = 24.sp,
     buttonOnClick: () -> Unit,
 ) {
-    var text = if(index == -1) "" else clVM.checkList[index].checklistContent
+    var checklistContent = if(index == -1) "" else clVM.checkList[index].checklistContent
     var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
     val checkListRepository = CheckListDatabaseRepository()
     var buttonFlag by remember { mutableStateOf(false) }
+    val db = CheckListDatabaseRepository.getInstance()
 
     Surface(
         modifier = Modifier
@@ -539,7 +656,7 @@ fun ChecklistWriteBoard(
                     CustomSpacer(height = 20.dp)
 
                     //할 일 입력
-                    text = customTextField(textEntered = text)
+                    checklistContent = customTextField(textEntered = checklistContent)
 
                     CustomSpacer(height = 20.dp)
                     Text(
@@ -571,41 +688,45 @@ fun ChecklistWriteBoard(
                         colors = ButtonDefaults.buttonColors(ConfirmButton),
                         onClick = {
                             //요일, 내용 검증
-                            if(text.isNotEmpty() && myDayOfWeek.isNotEmpty()){
+                            if(checklistContent.isNotEmpty() && myDayOfWeek.isNotEmpty()){
                                 buttonFlag = false
                                 //새로작성
                                 if(index == -1) {
-                                    val id = clVM.getCheckListId()
                                     clVM.checkList.add(
                                         CheckListEntity(
                                             listName = "default",
-                                            checklistContent = text,
+                                            checklistContent = checklistContent,
                                             restartWeek = myDayOfWeek,
                                             registerTime = LocalDateTime.now()
                                         )
                                     )
+                                    clVM.insertCheckList(
+                                        listName = "default",
+                                        checkListContent = checklistContent,
+                                        restartWeek = myDayOfWeek,
+                                        done = false,
+                                        lastUpdatedDate = LocalDateTime.now()
+                                    )
                                 }
                                 //수정
                                 else {
-                                    clVM.checkList[index].checklistContent = text
+                                    clVM.checkList[index].checklistContent = checklistContent
                                     clVM.checkList[index].restartWeek = myDayOfWeek
+                                    clVM.updateCheckList(
+                                        listName = "default",
+                                        checkListContent = checklistContent,
+                                        restartWeek = myDayOfWeek,
+                                        done = false,
+                                        lastUpdatedDate = LocalDateTime.now()
+                                    )
                                 }
-//                                clVM.isUpdated = false
-
-//                                db.updateCheckList(
-//                                    clVM.listName.value,
-//                                    clVM.checkList,
-//                                    clVM.isUpdated,
-//                                    clVM.lastUpdatedDate
-//                                )
-                                //창 닫는 콜백
                                 buttonOnClick()
                             } else
                                 buttonFlag = true
                         }
                     ) {
                         if(buttonFlag) {
-                            if (text.isEmpty())
+                            if (checklistContent.isEmpty())
                                 Toast.makeText(
                                     LocalContext.current,
                                     "할일이 비었습니다",

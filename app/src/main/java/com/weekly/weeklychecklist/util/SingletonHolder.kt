@@ -45,6 +45,7 @@ open class SingletonHolderNoProperty<out T>(creator: () -> T){
                 return checkInstanceAgain
             else {
                 val created = _creator!!()
+                instance = created
                 _creator = null
                 created
             }

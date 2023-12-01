@@ -58,7 +58,6 @@ class CheckListDatabaseRepository() {
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
-        isUpdated: Boolean,
         lastUpdatedDate: LocalDateTime
     ) {
         try {
@@ -68,7 +67,6 @@ class CheckListDatabaseRepository() {
                     checkListContent,
                     restartWeek,
                     done,
-//                    isUpdated,
                     lastUpdatedDate
                 )
             )
@@ -92,16 +90,23 @@ class CheckListDatabaseRepository() {
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
-        isUpdated: Boolean,
         lastUpdatedDate: LocalDateTime
     ) {
         try {
             val checkList = checkListDao.getCheckList(listName)
             if (checkList.isEmpty()) {
-                insertCheckList(listName, checkListContent, restartWeek, done, isUpdated, lastUpdatedDate)
+                insertCheckList(listName, checkListContent, restartWeek, done, lastUpdatedDate)
             }
             else {
-
+                checkListDao.updateCheckList(
+                    CheckListEntity(
+                        listName,
+                        checkListContent,
+                        restartWeek,
+                        done,
+                        lastUpdatedDate
+                    )
+                )
             }
         } catch (e: IOException) {
             Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")

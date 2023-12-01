@@ -8,13 +8,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,39 +19,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
-import com.weekly.weeklychecklist.ui.ChecklistSwipable
-import com.weekly.weeklychecklist.ui.CustomAlertDialog
 import com.weekly.weeklychecklist.ui.CustomSnackBar
-import com.weekly.weeklychecklist.ui.DraggableItem
+import com.weekly.weeklychecklist.ui.FloatingActions
 import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
-import com.weekly.weeklychecklist.ui.dragContainer
-import com.weekly.weeklychecklist.ui.rememberDragDropStste
-import com.weekly.weeklychecklist.ui.theme.ConfirmButton
+import com.weekly.weeklychecklist.ui.listTodo
 import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
 import com.weekly.weeklychecklist.vm.CheckListViewModel
@@ -78,26 +62,24 @@ class MainActivity : ComponentActivity() {
         }
 
         //DB init
-        val db = CheckListDatabaseRepository()
+        val db = CheckListDatabaseRepository.getInstance()
         db.initDatabase(this)
-        /*
-        val clList = clVM.getCheckList("default")
-        val clUpdate = clVM.getCheckListUpdate("default")
-
-        //DB get
-        if (clList.isNotEmpty()) {
-            clVM.apply {
-                checkList = clList.toMutableStateList()
-                checkListUpdate = clUpdate
-//                checkList.forEach { list ->
-//                    idList[list.id] = true
-//                }
-//                if(checkList.size == 0)
-//                    setCheckListId(0)
-//                else
-//                    setCheckListId(checkList.last().id)
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            val clList = clVM.getCheckList("default")
+            val clUpdate = clVM.getCheckListUpdate("default")
+            //DB get
+            if (clList.isNotEmpty()) {
+                clVM.apply {
+                    checkList = clList.toMutableStateList()
+                    checkListUpdate = clUpdate
+//                    checkList.forEach { list ->
+//                        list.done = true
+//                    }
+                }
             }
-        }*/
+        }
+
 
         onBackPressedDispatcher.addCallback(backPressedCallBack(this))
     }
@@ -174,7 +156,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                 .fillMaxSize()
                 .background(
                     color = BoardBackground,
-                    shape = RoundedCornerShape(cornerSize, cornerSize, 0, 0)
+                    shape = RectangleShape
                 )
                 .clickable(interactionSource = MutableInteractionSource(), indication = null) {
                     backgroundTouchEvent()
@@ -237,110 +219,6 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     }
 }
 
-//투두 리스트 리사이클러뷰
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun listTodo(
-    clVM: CheckListViewModel,
-    openIndex: MutableState<Int> = mutableStateOf(-1),
-    openFlag: MutableState<Boolean> = mutableStateOf(false)
-): Pair<MutableState<Boolean>, MutableState<Int>> {
-    val listState = rememberLazyListState()
-    val dragDropState = rememberDragDropStste(listState){ fromIndex, toIndex ->
-        clVM.checkList = clVM.checkList.apply {
-            val text = this[fromIndex]
-            this[fromIndex] = this[toIndex]
-            this[toIndex] = text
-        }
-    }
-    var dialogVisible by remember {mutableStateOf(false)}
-    var currentIndex by remember {mutableStateOf(-1)}
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .dragContainer(dragDropState),
-        state = listState,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        //리사이클러뷰
-        items(
-            count = clVM.checkList.size
-        ) { index ->
-            DraggableItem(dragDropState = dragDropState, index = index) { _ ->
-                //체크리스트(스와이프) 정의
-                ChecklistSwipable(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable {
-                            openIndex.value = index
-                            openFlag.value = !openFlag.value
-                        }
-                        .animateItemPlacement(
-                            animationSpec = tween(
-                                durationMillis = 300,
-                                easing = LinearOutSlowInEasing,
-                            )
-                        ),
-                    item = clVM.checkList[index],
-                ) {
-                    currentIndex = index
-                    dialogVisible = true
-                }
-            }
-        }
-    }
-    if(dialogVisible) {
-        CustomAlertDialog(
-            message = "삭제하시겠습니까?",
-            positiveEvent = {
-                CoroutineScope(Dispatchers.Default).launch {
-                    //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
-                    val current = clVM.checkList[currentIndex]
-                    delay(500L)
-                    clVM.checkList.remove(current)
-                }
-                //롤백 트리거
-                clVM.isSwipToDeleteCancel = true
-                dialogVisible = false
-            },
-            negativeEvent = {
-                clVM.isSwipToDeleteCancel = true
-                dialogVisible = false
-            })
-    }
-    return Pair(openFlag, openIndex)
-}
-
-//플로팅 버튼
-@Composable
-fun FloatingActions(context: Context, clVM: CheckListViewModel) {
-    var isPressed = remember { mutableStateOf(false) }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .padding(bottom = 10.dp, end = 10.dp),
-        contentAlignment = Alignment.TopEnd
-    ) {
-        FloatingActionButton(
-            modifier = Modifier.size(70.dp),
-            shape = CircleShape,
-            containerColor = ConfirmButton,
-            onClick = {
-                isPressed.value = !isPressed.value
-            },
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.add),
-                tint = Color.White,
-                contentDescription = "Add"
-            )
-        }
-    }
-    //플로팅 버튼 클릭 이벤트
-    isPressed = checkListWriteBoardWithBackGround(clVM = clVM, isPressed = isPressed)
-}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
