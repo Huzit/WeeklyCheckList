@@ -33,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissState
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.FractionalThreshold
@@ -197,7 +198,6 @@ fun ChecklistSwipable(
     dismissToDelete: () -> Unit,
 ) {
     val clVM = viewModel<CheckListViewModel>()
-
     val dismissState = rememberDismissState(
         initialValue = DismissValue.Default,
         confirmStateChange = {
@@ -205,12 +205,21 @@ fun ChecklistSwipable(
             if (it == DismissValue.DismissedToStart) {
                 //삭제이벤트
                 dismissToDelete()
+                clVM.isSwipToDeleteCancel = false
                 true
             } else{
                 false
             }
         }
     )
+    //취소 눌렀을 때 롤백
+    if(clVM.isSwipToDeleteCancel)
+        if(dismissState.currentValue != DismissValue.Default){
+            LaunchedEffect(Unit){
+                dismissState.reset()
+            }
+        }
+
     SwipeToDismiss(
         state = dismissState,
         modifier = modifier,
@@ -451,19 +460,21 @@ fun checkListWriteBoardWithBackGround(
                 fadeOut(
                     animationSpec = TweenSpec(100, 100, FastOutLinearInEasing),
                     targetAlpha = 0f
-                ) //속도 더 빠르
+                )
     ) {
         //수정 시
         if(index > -1)
             ChecklistWriteBoard(clVM = clVM, index = index) {
                 //확인 클릭 시
                 mIsPressed.value = false
+                //이전에 삭제 된 정보를 dismissState가 가지고 있음 -> 롤백 트리거 ON
+                clVM.isSwipToDeleteCancel = true
             }
         //새로 생성
         else
             ChecklistWriteBoard(clVM = clVM) {
-                //확인 클릭 시
                 mIsPressed.value = false
+                clVM.isSwipToDeleteCancel = true
             }
     }
     return mIsPressed

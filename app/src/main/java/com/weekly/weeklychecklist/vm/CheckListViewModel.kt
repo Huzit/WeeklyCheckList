@@ -14,6 +14,8 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 class CheckListViewModel() : ViewModel() {
+    //swipToDismiss 롤백 트리거
+    var isSwipToDeleteCancel: Boolean = false
     var checkList = mutableStateListOf<CheckListEntity>()
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
