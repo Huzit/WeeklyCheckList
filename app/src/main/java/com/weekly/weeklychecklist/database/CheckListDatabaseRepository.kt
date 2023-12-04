@@ -112,11 +112,15 @@ class CheckListDatabaseRepository() {
             Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")
         }
     }
-
-    suspend fun updateAll(){
-
+    
+    suspend fun updateCheckListUpdate(
+        checkListUpdateEntity: CheckListUpdateEntity
+    ){
+        //TODO UpdateQuery 필요
+        checkListUpdateDao.updateCheckListUpdate(
+            checkListUpdateEntity
+        )
     }
-
     //delete
     fun deleteDatabase() = CoroutineScope(Dispatchers.IO).launch {
         try {

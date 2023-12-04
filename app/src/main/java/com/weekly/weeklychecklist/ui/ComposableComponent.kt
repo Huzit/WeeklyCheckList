@@ -1,6 +1,7 @@
 package com.weekly.weeklychecklist.ui
 
 import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -687,6 +688,7 @@ fun ChecklistWriteBoard(
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(ConfirmButton),
                         onClick = {
+                            Log.d("whieboard", index.toString())
                             //요일, 내용 검증
                             if(checklistContent.isNotEmpty() && myDayOfWeek.isNotEmpty()){
                                 buttonFlag = false
@@ -712,6 +714,7 @@ fun ChecklistWriteBoard(
                                 else {
                                     clVM.checkList[index].checklistContent = checklistContent
                                     clVM.checkList[index].restartWeek = myDayOfWeek
+                                    //TODO Update 로직이 작동 안함
                                     clVM.updateCheckList(
                                         listName = "default",
                                         checkListContent = checklistContent,

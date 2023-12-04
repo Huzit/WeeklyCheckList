@@ -1,4 +1,4 @@
-package com.weekly.weeklychecklist.database
+package com.weekly.weeklychecklist.converters
 
 import androidx.compose.runtime.MutableState
 import androidx.room.TypeConverter
@@ -17,7 +17,7 @@ class CheckListConverter {
 
     @TypeConverter
     fun jsonToList(value: String): MutableSet<MyDayOfWeek> {
-        val listType = object: TypeToken<List<CheckListInfo>>(){}.type
+        val listType = object: TypeToken<MutableSet<MyDayOfWeek>>(){}.type
         val gson = Gson()
         return gson.fromJson(value, listType)
     }

@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.converters.LocalDateTimeConverter
-import com.weekly.weeklychecklist.database.CheckListConverter
+import com.weekly.weeklychecklist.converters.CheckListConverter
 import java.time.LocalDateTime
 
 @Entity(tableName = "CheckList")

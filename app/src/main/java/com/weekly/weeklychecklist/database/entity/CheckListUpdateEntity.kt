@@ -16,7 +16,7 @@ data class CheckListUpdateEntity(
     @ColumnInfo("is_update")
     var isUpdate: Boolean,
     @ColumnInfo("register_time")
-    val registerTime: LocalDateTime
+    var registerTime: LocalDateTime
 ){
     @PrimaryKey(autoGenerate = true)
     var idx: Long = 0

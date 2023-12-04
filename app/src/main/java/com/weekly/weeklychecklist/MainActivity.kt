@@ -66,16 +66,15 @@ class MainActivity : ComponentActivity() {
         db.initDatabase(this)
         
         CoroutineScope(Dispatchers.IO).launch {
+            //유저 체크리스트를 관리하는 DB
             val clList = clVM.getCheckList("default")
+            //마지막으로 업데이트 된 날짜를 관리하는 DB
             val clUpdate = clVM.getCheckListUpdate("default")
             //DB get
             if (clList.isNotEmpty()) {
                 clVM.apply {
                     checkList = clList.toMutableStateList()
                     checkListUpdate = clUpdate
-//                    checkList.forEach { list ->
-//                        list.done = true
-//                    }
                 }
             }
         }

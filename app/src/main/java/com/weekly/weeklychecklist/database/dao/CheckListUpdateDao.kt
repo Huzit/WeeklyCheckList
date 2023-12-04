@@ -3,6 +3,7 @@ package com.weekly.weeklychecklist.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 
 @Dao
@@ -12,4 +13,7 @@ interface CheckListUpdateDao{
     
     @Insert
     fun insertCheckListUpdate(vararg checkListUpdateEntity: CheckListUpdateEntity)
+    
+    @Update
+    fun updateCheckListUpdate(vararg checkListUpdateEntity: CheckListUpdateEntity)
 }

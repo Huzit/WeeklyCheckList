@@ -8,6 +8,8 @@ import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -52,7 +54,7 @@ class CheckListViewModel() : ViewModel() {
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         lastUpdatedDate: LocalDateTime
-    ) = viewModelScope.launch {
+    ) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.insertCheckList(
             listName,
             checkListContent,
@@ -68,13 +70,21 @@ class CheckListViewModel() : ViewModel() {
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         lastUpdatedDate: LocalDateTime
-    ) = viewModelScope.launch {
+    ) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.updateCheckList(
             listName,
             checkListContent,
             restartWeek,
             done,
             lastUpdatedDate
+        )
+    }
+    
+    fun updateCheckListUpdate(
+        checkListUpdateEntity: CheckListUpdateEntity
+    ) = CoroutineScope(Dispatchers.IO).launch {
+        checkListRepository.updateCheckListUpdate(
+            checkListUpdateEntity
         )
     }
 
@@ -109,6 +119,9 @@ class CheckListViewModel() : ViewModel() {
             }
             lastUpdatedDate = LocalDate.now()
             checkListUpdate[0].isUpdate = true
+            checkListUpdate[0].registerTime = LocalDateTime.now()
+            //TODO Update 통신 필요
+            updateCheckListUpdate(checkListUpdate[0])
             return
         }
         //최근 접속일 이 일주일 미만일 시
@@ -124,6 +137,7 @@ class CheckListViewModel() : ViewModel() {
                     if (index == checkList.size - 1) {
                         checkListUpdate[0].isUpdate = true
                         lastUpdatedDate = LocalDate.now()
+                        updateCheckListUpdate(checkListUpdate[0])
                         return
                     }
                 }
