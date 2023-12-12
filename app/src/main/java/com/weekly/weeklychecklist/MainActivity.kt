@@ -109,6 +109,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPause() {
         clVM.restartMainActivity = true
+        clVM.updateIfDone()
         super.onPause()
     }
 

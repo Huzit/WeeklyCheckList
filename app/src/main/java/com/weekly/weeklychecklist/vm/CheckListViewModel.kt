@@ -102,13 +102,32 @@ class CheckListViewModel() : ViewModel() {
     }
 
     fun updateIfDone(){
-        //backup이랑 똑같은 애들 만 뺴고 전부 업데이트
-        /***
-         * 1. 백업 루프를 돌린다.
-         * 2. 백업과 다른 내용물을 가지고 있는 애들을 수정된 최종본에서 찾는다.
-         *   2-1. 해당 백업을 가지고 있지 않으면
-         * 3. 업데이트 한다.
-         */
+        //수정 후
+        val sortedCheckList = checkList.associateBy { it.idx }.toMutableMap()
+        //DB에서 불러온 데이터
+        val sortedCheckListBackup = checkListBackUp.associateBy { it.idx }
+        
+        for(i in sortedCheckListBackup){
+            //DB에서 불러온 데이터를 가지고 있으며
+            if(sortedCheckList.containsKey(i.key)){
+                val list = sortedCheckList[i.key]
+                //동일한 내용과 날짜이며 체크가 다를 때
+                if(list != null
+                    && list.checklistContent == i.value.checklistContent
+                    && list.restartWeek == i.value.restartWeek
+                    && list.done != i.value.done) {
+                    
+                    updateCheckList(
+                        idx = list.idx,
+                        listName = list.listName,
+                        checkListContent = list.checklistContent,
+                        restartWeek = list.restartWeek,
+                        done = list.done,
+                        lastUpdatedDate = LocalDateTime.now()
+                    )
+                }
+            }
+        }
     }
     
     private fun updateCheckListUpdate(
@@ -117,20 +136,6 @@ class CheckListViewModel() : ViewModel() {
         checkListRepository.updateCheckListUpdate(
             checkListUpdateEntity
         )
-    }
-
-    fun setCheckListId(id: Int) {
-        checkListId = id
-    }
-
-    fun getCheckListId(): Int {
-        //무결성 검증 후 리턴
-        if (idList.contains(checkListId)) {
-            //중복일 시 증가
-            ++checkListId
-        }
-        idList[checkListId] = true
-        return checkListId
     }
 
     //요일마다 스위치 초기화
