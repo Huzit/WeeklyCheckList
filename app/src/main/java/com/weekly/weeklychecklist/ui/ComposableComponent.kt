@@ -123,7 +123,9 @@ fun listTodo(
     }
     var dialogVisible by remember {mutableStateOf(false)}
     var currentIndex by remember {mutableStateOf(-1)}
-    
+    val lazyColumnSize = clVM.checkList
+
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -133,7 +135,7 @@ fun listTodo(
     ) {
         //리사이클러뷰
         items(
-            count = clVM.checkList.size
+            count = lazyColumnSize.size
         ) { index ->
             DraggableItem(dragDropState = dragDropState, index = index) { _ ->
                 //체크리스트(스와이프) 정의
@@ -151,6 +153,7 @@ fun listTodo(
                             )
                         ),
                     item = clVM.checkList[index],
+                    itemIndex = index
                 ) {
                     currentIndex = index
                     dialogVisible = true
@@ -216,6 +219,7 @@ fun FloatingActions(context: Context, clVM: CheckListViewModel) {
 @Composable
 fun CheckListBox(
     item: CheckListEntity,
+    itemIndex: Int
 ) {
     val configuration = LocalConfiguration.current
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
@@ -224,7 +228,6 @@ fun CheckListBox(
     val height = 60.dp
     val cornerSize = 20
     val done = remember { mutableStateOf(item.done) }
-    val index = item.idx.toInt()
 
     Surface(
         modifier = Modifier
@@ -300,7 +303,7 @@ fun CheckListBox(
                     fontSize = dpToSp(dp = 10.dp),
                     modifier = Modifier.padding(start = 7.dp)
                 )
-                CustomToggleButton(isCheck = done.value, index = index)
+                CustomToggleButton(isCheck = done.value, itemIndex = itemIndex)
             }
         }
     }
@@ -312,6 +315,7 @@ fun CheckListBox(
 fun ChecklistSwipable(
     modifier: Modifier,
     item: CheckListEntity,
+    itemIndex: Int,
     dismissToDelete: () -> Unit,
 ) {
     val clVM = viewModel<CheckListViewModel>()
@@ -345,7 +349,7 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            CheckListBox(item)
+            CheckListBox(item, itemIndex)
         },
         background = {
             val color by animateColorAsState(SwipeBackground.copy(), label = "")
@@ -376,7 +380,7 @@ fun ChecklistSwipable(
 @Composable
 fun CustomToggleButton(
     isCheck: Boolean,
-    index: Int
+    itemIndex: Int
 ) {
     val width: Dp = 95.dp
     val height: Dp = 45.dp
@@ -411,7 +415,7 @@ fun CustomToggleButton(
                 interactionSource = interactionSource,
             ) {
                 switchOn = !switchOn
-                clVM.checkList[index].done = switchOn
+                clVM.checkList[itemIndex].done = switchOn
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -688,7 +692,7 @@ fun ChecklistWriteBoard(
                             .height(50.dp),
                         colors = ButtonDefaults.buttonColors(ConfirmButton),
                         onClick = {
-                            Log.d("whieboard", index.toString())
+                            Log.d("CheckListWriteBoard", "current selected index : $index")
                             //요일, 내용 검증
                             if(checklistContent.isNotEmpty() && myDayOfWeek.isNotEmpty()){
                                 buttonFlag = false
@@ -714,8 +718,9 @@ fun ChecklistWriteBoard(
                                 else {
                                     clVM.checkList[index].checklistContent = checklistContent
                                     clVM.checkList[index].restartWeek = myDayOfWeek
-                                    //TODO Update 로직이 작동 안함
+                                    Log.d("CheckListWriteBoard", "checkList update is start")
                                     clVM.updateCheckList(
+                                        idx = clVM.checkList[index].idx,
                                         listName = "default",
                                         checkListContent = checklistContent,
                                         restartWeek = myDayOfWeek,

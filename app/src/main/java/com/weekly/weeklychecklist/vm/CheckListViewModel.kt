@@ -1,9 +1,10 @@
 package com.weekly.weeklychecklist.vm
 
+import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
@@ -19,6 +20,7 @@ class CheckListViewModel() : ViewModel() {
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
     var checkList = mutableStateListOf<CheckListEntity>()
+    var checkListBackUp = ArrayList<CheckListEntity>()
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     var lastUpdatedDate: LocalDate = LocalDate.now()
@@ -39,12 +41,29 @@ class CheckListViewModel() : ViewModel() {
         }
         return sb.toString()
     }
+
+    fun getCheckLists(){
+        CoroutineScope(Dispatchers.IO).launch {
+            //유저 체크리스트를 관리하는 DB
+            val clList = getCheckList("default")
+            //마지막으로 업데이트 된 날짜를 관리하는 DB
+            val clUpdate = getCheckListUpdate("default")
+            //DB get
+            if (clList.isNotEmpty()) {
+                Log.d(javaClass.simpleName, "clList size == ${clList.size}, startRow == ${clList.first()}")
+                checkList = clList.toMutableStateList()
+                checkListBackUp = clList
+                checkListUpdate = clUpdate
+            }
+        }
+    }
+
     
-    fun getCheckList(
+    private fun getCheckList(
         listName: String
     ): ArrayList<CheckListEntity> = ArrayList(checkListRepository.getCheckList(listName))
     
-    fun getCheckListUpdate(
+    private fun getCheckListUpdate(
         listName: String
     ): ArrayList<CheckListUpdateEntity> = ArrayList(checkListRepository.getCheckListUpdate(listName))
 
@@ -65,6 +84,7 @@ class CheckListViewModel() : ViewModel() {
     }
 
     fun updateCheckList(
+        idx: Long,
         listName: String,
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
@@ -72,6 +92,7 @@ class CheckListViewModel() : ViewModel() {
         lastUpdatedDate: LocalDateTime
     ) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.updateCheckList(
+            idx,
             listName,
             checkListContent,
             restartWeek,
@@ -79,8 +100,18 @@ class CheckListViewModel() : ViewModel() {
             lastUpdatedDate
         )
     }
+
+    fun updateIfDone(){
+        //backup이랑 똑같은 애들 만 뺴고 전부 업데이트
+        /***
+         * 1. 백업 루프를 돌린다.
+         * 2. 백업과 다른 내용물을 가지고 있는 애들을 수정된 최종본에서 찾는다.
+         *   2-1. 해당 백업을 가지고 있지 않으면
+         * 3. 업데이트 한다.
+         */
+    }
     
-    fun updateCheckListUpdate(
+    private fun updateCheckListUpdate(
         checkListUpdateEntity: CheckListUpdateEntity
     ) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.updateCheckListUpdate(

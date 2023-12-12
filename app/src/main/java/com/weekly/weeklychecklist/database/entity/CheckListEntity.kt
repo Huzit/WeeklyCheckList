@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @Entity(tableName = "CheckList")
 @TypeConverters(CheckListConverter::class, LocalDateTimeConverter::class)
 data class CheckListEntity(
-    @ColumnInfo(name = "list_name")
+    @ColumnInfo(name = "listName")
     var listName: String,
     @ColumnInfo (name = "checklistContent")
     var checklistContent: String,

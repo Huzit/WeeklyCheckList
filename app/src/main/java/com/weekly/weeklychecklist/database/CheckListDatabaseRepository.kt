@@ -53,7 +53,7 @@ class CheckListDatabaseRepository() {
         }
     }
 
-    suspend fun insertCheckList(
+    fun insertCheckList(
         listName: String,
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
@@ -85,7 +85,8 @@ class CheckListDatabaseRepository() {
     }
 
     //update
-    suspend fun updateCheckList(
+    fun updateCheckList(
+        idx: Long,
         listName: String,
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,
@@ -95,17 +96,18 @@ class CheckListDatabaseRepository() {
         try {
             val checkList = checkListDao.getCheckList(listName)
             if (checkList.isEmpty()) {
+                Log.d("updateCheckList", "checkList is Empty so Insert")
                 insertCheckList(listName, checkListContent, restartWeek, done, lastUpdatedDate)
             }
             else {
+                Log.d("updateCheckList", "checkList update done")
                 checkListDao.updateCheckList(
-                    CheckListEntity(
-                        listName,
-                        checkListContent,
-                        restartWeek,
-                        done,
-                        lastUpdatedDate
-                    )
+                    idx,
+                    listName,
+                    checkListContent,
+                    restartWeek,
+                    done,
+                    lastUpdatedDate
                 )
             }
         } catch (e: IOException) {
