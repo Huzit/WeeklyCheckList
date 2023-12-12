@@ -106,27 +106,31 @@ class CheckListViewModel() : ViewModel() {
         val sortedCheckList = checkList.associateBy { it.idx }.toMutableMap()
         //DB에서 불러온 데이터
         val sortedCheckListBackup = checkListBackUp.associateBy { it.idx }
-        
+        //변경된 적 없는(업데이트 할 필요 없는) 항목 제거
         for(i in sortedCheckListBackup){
-            //DB에서 불러온 데이터를 가지고 있으며
             if(sortedCheckList.containsKey(i.key)){
                 val list = sortedCheckList[i.key]
-                //동일한 내용과 날짜이며 체크가 다를 때
                 if(list != null
                     && list.checklistContent == i.value.checklistContent
                     && list.restartWeek == i.value.restartWeek
-                    && list.done != i.value.done) {
-                    
-                    updateCheckList(
-                        idx = list.idx,
-                        listName = list.listName,
-                        checkListContent = list.checklistContent,
-                        restartWeek = list.restartWeek,
-                        done = list.done,
-                        lastUpdatedDate = LocalDateTime.now()
-                    )
+                    && list.done == i.value.done) {
+                    //TODO 정확히 지워지는지 테스트
+                    sortedCheckList.remove(i.key)
                 }
             }
+        }
+        //나머지 업데이트
+        for(i in sortedCheckList) {
+            val list = i.value
+            //TODO 업데이트 되는지 테스트
+            updateCheckList(
+                idx = list.idx,
+                listName = list.listName,
+                checkListContent = list.checklistContent,
+                restartWeek = list.restartWeek,
+                done = list.done,
+                lastUpdatedDate = LocalDateTime.now()
+            )
         }
     }
     
