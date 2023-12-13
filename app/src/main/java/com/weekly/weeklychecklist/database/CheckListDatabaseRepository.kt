@@ -61,6 +61,7 @@ class CheckListDatabaseRepository() {
         lastUpdatedDate: LocalDateTime
     ) {
         try {
+            Log.d(TAG, "insert is successful")
             checkListDao.insertCheckList(
                 CheckListEntity(
                     listName,
@@ -124,9 +125,10 @@ class CheckListDatabaseRepository() {
         )
     }
     //delete
-    fun deleteDatabase() = CoroutineScope(Dispatchers.IO).launch {
+    fun deleteDatabase(deleteIndex: Long) {
         try {
-            checkListDao.deleteCheckList()
+            Log.d(TAG, "$deleteIndex index is deleted")
+            checkListDao.deleteCheckList(deleteIndex)
         } catch (e: IOException) {
             Log.e(javaClass.simpleName, "Database Delete is Failed")
         }

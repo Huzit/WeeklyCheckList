@@ -63,6 +63,7 @@ class MainActivity : ComponentActivity() {
         //DB init
         val db = CheckListDatabaseRepository.getInstance()
         db.initDatabase(this)
+        clVM.getCheckLists()
 
         onBackPressedDispatcher.addCallback(backPressedCallBack(this))
     }
@@ -98,7 +99,6 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         //요일 지나면 스위치 초기화
-        clVM.getCheckLists()
 //        clVM.switchInitialization()
         //최근 실행 상태일 시 메인 액티비티 강제 리컴포지션 (추후 반드시 수정할 것, 매우매우 잘못된 방식 이라고 생각!!!)
         if (clVM.restartMainActivity) {
@@ -107,9 +107,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        clVM.updateIfDone()
+    }
+
     override fun onPause() {
         clVM.restartMainActivity = true
-        clVM.updateIfDone()
         super.onPause()
     }
 

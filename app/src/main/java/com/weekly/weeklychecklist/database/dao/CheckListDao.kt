@@ -20,8 +20,8 @@ interface CheckListDao {
     @Query("SELECT * FROM CheckList WHERE listName = :listName")
     fun getCheckList(vararg listName: String): List<CheckListEntity>
 
-    @Query("DELETE FROM CheckList WHERE listName = :listName")
-    fun deleteCheckList(vararg listName: String)
+    @Query("DELETE FROM CheckList WHERE idx = :idx")
+    fun deleteCheckList(vararg idx: Long)
     @Query("""
             Update CheckList
                 Set listName = :listName,

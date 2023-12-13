@@ -171,6 +171,7 @@ fun listTodo(
                     delay(500L)
                     clVM.checkList.remove(current)
                     //TODO Delete 쿼리
+                    clVM.deleteCheckList(current.idx)
                     
                 }
                 //롤백 트리거
@@ -333,7 +334,7 @@ fun ChecklistSwipable(
             }
         }
     )
-    //취소 눌렀을 때 롤백
+    //삭제 작업 완료됬을 때 롤백
     if(clVM.isSwipToDeleteCancel)
         if(dismissState.currentValue != DismissValue.Default){
             LaunchedEffect(Unit){

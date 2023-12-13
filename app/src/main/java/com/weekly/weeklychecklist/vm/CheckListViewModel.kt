@@ -17,32 +17,22 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 class CheckListViewModel() : ViewModel() {
+    private val TAG = "CheckListViewModel"
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
     var checkList = mutableStateListOf<CheckListEntity>()
-    var checkListBackUp = ArrayList<CheckListEntity>()
+    private var checkListBackUp = mapOf<Long, CheckListEntity>()
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     var lastUpdatedDate: LocalDate = LocalDate.now()
     val isSwipe = mutableStateOf(false)
-    val idList = mutableMapOf<Int, Boolean>()
 
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
     private val checkListRepository = CheckListDatabaseRepository.getInstance()
 
-
-    private var checkListId = 0
-    
-    fun checklistToString(): String {
-        val sb = StringBuilder()
-        checkList.forEach {
-            sb.append("$it ")
-        }
-        return sb.toString()
-    }
-
     fun getCheckLists(){
+        Log.d(TAG, "getDatabase")
         CoroutineScope(Dispatchers.IO).launch {
             //유저 체크리스트를 관리하는 DB
             val clList = getCheckList("default")
@@ -52,7 +42,7 @@ class CheckListViewModel() : ViewModel() {
             if (clList.isNotEmpty()) {
                 Log.d(javaClass.simpleName, "clList size == ${clList.size}, startRow == ${clList.first()}")
                 checkList = clList.toMutableStateList()
-                checkListBackUp = clList
+                checkListBackUp = clList.associateBy { it.idx }
                 checkListUpdate = clUpdate
             }
         }
@@ -103,25 +93,28 @@ class CheckListViewModel() : ViewModel() {
 
     fun updateIfDone(){
         //수정 후
-        val sortedCheckList = checkList.associateBy { it.idx }.toMutableMap()
+        val checkListMap = checkList.associateBy { it.idx }.toMutableMap()
+        Log.d("updateIfDone", checkListMap.toString())
+        checkListMap[0]?.done = true
         //DB에서 불러온 데이터
-        val sortedCheckListBackup = checkListBackUp.associateBy { it.idx }
+        Log.d("updateIfDone", checkListBackUp.toString())
         //변경된 적 없는(업데이트 할 필요 없는) 항목 제거
-        for(i in sortedCheckListBackup){
-            if(sortedCheckList.containsKey(i.key)){
-                val list = sortedCheckList[i.key]
+        for(i in checkListBackUp){
+            if(checkListMap.containsKey(i.key)){
+                val list = checkListMap[i.key]
                 if(list != null
                     && list.checklistContent == i.value.checklistContent
                     && list.restartWeek == i.value.restartWeek
                     && list.done == i.value.done) {
-                    //TODO 정확히 지워지는지 테스트
-                    sortedCheckList.remove(i.key)
+                    Log.d("updateIfDone", "지운 항목 : $list")
+                    checkListMap.remove(i.key)
                 }
             }
         }
         //나머지 업데이트
-        for(i in sortedCheckList) {
+        for(i in checkListMap) {
             val list = i.value
+            Log.d(TAG, "update : $list")
             //TODO 업데이트 되는지 테스트
             updateCheckList(
                 idx = list.idx,
@@ -202,6 +195,11 @@ class CheckListViewModel() : ViewModel() {
         }
         return reWeeks.toSet()
     }
+
+    fun deleteCheckList(deleteIndex: Long) = CoroutineScope(Dispatchers.IO).launch {
+        checkListRepository.deleteDatabase(deleteIndex)
+    }
+
     //java.time.DayOfWeek 를 MyDayOfWeek로 변경
     private fun convertDayOfWeekToMyDayOfWeek(weeks: DayOfWeek) = when (weeks) {
         DayOfWeek.MONDAY -> MyDayOfWeek.월
