@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
@@ -91,6 +92,21 @@ class CheckListViewModel() : ViewModel() {
         )
     }
 
+    fun updateCheckListAll() = CoroutineScope(Dispatchers.IO).launch {
+        if(checkList.isNotEmpty()){
+            checkList.forEach{ list ->
+                checkListRepository.updateCheckList(
+                    list.idx,
+                    list.listName,
+                    list.checklistContent,
+                    list.restartWeek,
+                    list.done,
+                    list.registerTime
+                )
+            }
+        }
+    }
+    //TODO 로직 수정 필요함
     fun updateIfDone(){
         //수정 후
         val checkListMap = checkList.associateBy { it.idx }.toMutableMap()
