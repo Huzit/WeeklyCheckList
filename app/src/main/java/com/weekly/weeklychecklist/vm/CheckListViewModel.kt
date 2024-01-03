@@ -142,9 +142,33 @@ class CheckListViewModel() : ViewModel() {
             )
         }
     }
+    //해당 체크리스트의 수정일 최초 등록
+    fun insertCheckListUpdate(
+        listName: String,
+        isUpdated: Boolean,
+        registerTime: LocalDateTime
+    ) = CoroutineScope(Dispatchers.IO).launch {
+        if(checkListUpdate.isNotEmpty()){
+            checkListUpdate.forEach {checkList ->
+                if(checkList.listName == listName)
+                    return@launch
+            }
+            checkListRepository.insertCheckListUpdate(
+                listName,
+                isUpdated,
+                registerTime
+            )
+        } else{
+            checkListRepository.insertCheckListUpdate(
+                listName,
+                isUpdated,
+                registerTime
+            )
+        }
+    }
     
     private fun updateCheckListUpdate(
-        checkListUpdateEntity: CheckListUpdateEntity
+        checkListUpdateEntity: CheckListUpdateEntity,
     ) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.updateCheckListUpdate(
             checkListUpdateEntity
@@ -161,37 +185,37 @@ class CheckListViewModel() : ViewModel() {
             checkListUpdate[0].isUpdate = false
         val passedWeek = getBetweenDate(lastUpdatedDate)
 
-        //일주일 이상 지났을 시 전체 초기화
-        if (passedWeek.size >= 7) {
-            checkList.forEach { item ->
-                item.done = false
+        if(checkListUpdate.isNotEmpty())
+            //일주일 이상 지났을 시 전체 초기화
+            if (passedWeek.size >= 7) {
+                checkList.forEach { item ->
+                    item.done = false
+                }
+                lastUpdatedDate = LocalDate.now()
+                checkListUpdate[0].isUpdate = true
+                checkListUpdate[0].registerTime = LocalDateTime.now()
+                updateCheckListUpdate(checkListUpdate[0])
+                return
             }
-            lastUpdatedDate = LocalDate.now()
-            checkListUpdate[0].isUpdate = true
-            checkListUpdate[0].registerTime = LocalDateTime.now()
-            //TODO Update 통신 필요
-            updateCheckListUpdate(checkListUpdate[0])
-            return
-        }
-        //최근 접속일 이 일주일 미만일 시
-        else {
-            checkList.forEachIndexed { index, item ->
-                if (!checkListUpdate[0].isUpdate) {
-                    item.restartWeek.forEach { week ->
-                        if (passedWeek.contains(week)) {
-                            item.done = false
+            //최근 접속일 이 일주일 미만일 시
+            else {
+                checkList.forEachIndexed { index, item ->
+                    if (!checkListUpdate[0].isUpdate) {
+                        item.restartWeek.forEach { week ->
+                            if (passedWeek.contains(week)) {
+                                item.done = false
+                            }
                         }
-                    }
-                    //마지막 일 시
-                    if (index == checkList.size - 1) {
-                        checkListUpdate[0].isUpdate = true
-                        lastUpdatedDate = LocalDate.now()
-                        updateCheckListUpdate(checkListUpdate[0])
-                        return
+                        //마지막 일 시
+                        if (index == checkList.size - 1) {
+                            checkListUpdate[0].isUpdate = true
+                            lastUpdatedDate = LocalDate.now()
+                            updateCheckListUpdate(checkListUpdate[0])
+                            return
+                        }
                     }
                 }
             }
-        }
     }
 
     //오늘 ~ 이전 이전 업데이트 날짜 사이의 요일 구하기

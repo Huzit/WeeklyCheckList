@@ -170,9 +170,7 @@ fun listTodo(
                     val current = clVM.checkList[currentIndex]
                     delay(500L)
                     clVM.checkList.remove(current)
-                    //TODO Delete 쿼리
                     clVM.deleteCheckList(current.idx)
-                    
                 }
                 //롤백 트리거
                 clVM.isSwipToDeleteCancel = true
@@ -548,7 +546,7 @@ fun weekSelectButton(
     return if (returnSet.isNotEmpty()) returnSet.first() else MyDayOfWeek.널
 }
 
-//체크리스트 작성 보드 + 애니메이션
+//체크리스트 작성 보드 + 백그라운드 + 애니메이션
 @Composable
 fun checkListWriteBoardWithBackGround(
     clVM: CheckListViewModel,
@@ -699,6 +697,7 @@ fun ChecklistWriteBoard(
                                 buttonFlag = false
                                 //새로작성
                                 if(index == -1) {
+                                    //UI
                                     clVM.checkList.add(
                                         CheckListEntity(
                                             listName = "default",
@@ -707,12 +706,18 @@ fun ChecklistWriteBoard(
                                             registerTime = LocalDateTime.now()
                                         )
                                     )
+                                    //DB
                                     clVM.insertCheckList(
                                         listName = "default",
                                         checkListContent = checklistContent,
                                         restartWeek = myDayOfWeek,
                                         done = false,
                                         lastUpdatedDate = LocalDateTime.now()
+                                    )
+                                    clVM.insertCheckListUpdate(
+                                        listName = "default",
+                                        isUpdated = false,
+                                        registerTime = LocalDateTime.now()
                                     )
                                 }
                                 //수정

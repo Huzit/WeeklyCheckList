@@ -9,11 +9,7 @@ import com.weekly.weeklychecklist.database.dao.CheckListUpdateDao
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import com.weekly.weeklychecklist.util.SingletonHolderNoProperty
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.io.IOException
-import java.time.LocalDate
 import java.time.LocalDateTime
 
 class CheckListDatabaseRepository() {
@@ -35,13 +31,13 @@ class CheckListDatabaseRepository() {
         checkListUpdateDao = db.checkListUpdateDao()
     }
     
-    suspend fun insertCheckListUpdate(
+    fun insertCheckListUpdate(
         listName: String,
         isUpdated: Boolean,
         registerTime: LocalDateTime
     ){
         try{
-            checkListUpdateDao.insertCheckListUpdate(
+            checkListUpdateDao.insertCheckListUpdateDate(
                 CheckListUpdateEntity(
                     listName,
                     isUpdated,
@@ -51,6 +47,18 @@ class CheckListDatabaseRepository() {
         }catch (e: RuntimeException){
             Log.e(TAG, "이미 존재 하는 테이블 입니다. ${e.stackTraceToString()}")
         }
+    }
+
+    suspend fun updateCheckListUpdate(
+        checkListUpdateEntity: CheckListUpdateEntity,
+    ){
+        //TODO UpdateQuery 필요
+        checkListUpdateDao.updateCheckListUpdateDate(
+            checkListUpdateEntity.listName,
+            checkListUpdateEntity.isUpdate,
+            checkListUpdateEntity.registerTime,
+            checkListUpdateEntity.idx
+        )
     }
 
     fun insertCheckList(
@@ -82,7 +90,7 @@ class CheckListDatabaseRepository() {
     }
     
     fun getCheckListUpdate(listName: String): List<CheckListUpdateEntity> {
-        return checkListUpdateDao.getCheckListUpdated(listName)
+        return checkListUpdateDao.getCheckListUpdateDate(listName)
     }
 
     //update
@@ -115,15 +123,7 @@ class CheckListDatabaseRepository() {
             Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")
         }
     }
-    
-    suspend fun updateCheckListUpdate(
-        checkListUpdateEntity: CheckListUpdateEntity
-    ){
-        //TODO UpdateQuery 필요
-        checkListUpdateDao.updateCheckListUpdate(
-            checkListUpdateEntity
-        )
-    }
+
     //delete
     fun deleteDatabase(deleteIndex: Long) {
         try {
