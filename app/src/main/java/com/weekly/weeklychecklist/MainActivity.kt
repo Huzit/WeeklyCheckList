@@ -3,6 +3,7 @@ package com.weekly.weeklychecklist
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -22,7 +23,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -30,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -39,6 +43,7 @@ import com.weekly.weeklychecklist.ui.CustomSnackBar
 import com.weekly.weeklychecklist.ui.FloatingActions
 import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
 import com.weekly.weeklychecklist.ui.listTodo
+import com.weekly.weeklychecklist.ui.observeAsState
 import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
 import com.weekly.weeklychecklist.vm.CheckListViewModel
@@ -46,6 +51,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 
 class MainActivity : ComponentActivity() {
@@ -100,6 +106,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         //요일 지나면 스위치 초기화
         clVM.switchInitialization()
+
+
         //문제 찾았당!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //최근 실행 상태일 시 메인 액티비티 강제 리컴포지션 (추후 반드시 수정할 것, 매우매우 잘못된 방식 이라고 생각!!!)
 //        if (clVM.restartMainActivity) {
@@ -140,6 +148,8 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     var openFlag = remember { mutableStateOf(false) }
     //ListTodo 리턴용
     var openInfo: Pair<MutableState<Boolean>, MutableState<Int>>
+    //TODO 화면만 재 랜더링 시키면 문제 없음
+    val lifecycleEventFlag by LocalLifecycleOwner.current.lifecycle.observeAsState()
 
     WeeklyCheckListTheme {
         //뒷 배경

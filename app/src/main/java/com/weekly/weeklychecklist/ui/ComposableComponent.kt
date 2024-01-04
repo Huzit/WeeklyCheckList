@@ -1,5 +1,6 @@
 package com.weekly.weeklychecklist.ui
 
+import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -54,6 +55,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -62,6 +64,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -71,6 +74,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +86,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
@@ -104,6 +110,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
+@Composable
+fun Lifecycle.observeAsState(): State<Lifecycle.Event>{
+    val state = remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
+    DisposableEffect(this){
+        val observer = LifecycleEventObserver{ _, event ->
+            state.value = event
+        }
+        this@observeAsState.addObserver(observer)
+        onDispose {
+            this@observeAsState.removeObserver(observer)
+        }
+    }
+    return state
+}
 
 //투두 리스트 리사이클러뷰
 @OptIn(ExperimentalFoundationApi::class)
@@ -719,6 +739,7 @@ fun ChecklistWriteBoard(
                                         isUpdated = false,
                                         registerTime = LocalDateTime.now()
                                     )
+                                    clVM.getCheckLists()
                                 }
                                 //수정
                                 else {
@@ -733,6 +754,7 @@ fun ChecklistWriteBoard(
                                         done = false,
                                         lastUpdatedDate = LocalDateTime.now()
                                     )
+                                    clVM.getCheckLists()
                                 }
                                 buttonOnClick()
                             } else

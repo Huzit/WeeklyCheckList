@@ -1,6 +1,7 @@
 package com.weekly.weeklychecklist.vm
 
 import android.util.Log
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
@@ -131,7 +132,6 @@ class CheckListViewModel() : ViewModel() {
         for(i in checkListMap) {
             val list = i.value
             Log.d(TAG, "update : $list")
-            //TODO 업데이트 되는지 테스트
             updateCheckList(
                 idx = list.idx,
                 listName = list.listName,
@@ -181,36 +181,51 @@ class CheckListViewModel() : ViewModel() {
          * isUpdate는 onDestroy 시 다시 시작하므로 알아서 false
          * 만약, 포그라운드에서 하루 이상이 지난다면 onDestroy를 못 탈수도 있으므로 false
          ***/
-        if (lastUpdatedDate.isBefore(LocalDate.now()))
-            checkListUpdate[0].isUpdate = false
+        if(checkListUpdate.isNotEmpty()) {
+            //오늘 이전일 시
+            if (lastUpdatedDate.isBefore(LocalDate.now()))
+                checkListUpdate[0].isUpdate = false
+            lastUpdatedDate = checkListUpdate[0].registerTime.toLocalDate()
+        }
         val passedWeek = getBetweenDate(lastUpdatedDate)
 
         if(checkListUpdate.isNotEmpty())
             //일주일 이상 지났을 시 전체 초기화
             if (passedWeek.size >= 7) {
+                Log.d(javaClass.simpleName, "7일 이상 경과, 전체 초기화")
                 checkList.forEach { item ->
                     item.done = false
                 }
-                lastUpdatedDate = LocalDate.now()
-                checkListUpdate[0].isUpdate = true
-                checkListUpdate[0].registerTime = LocalDateTime.now()
+                checkListUpdate[0].apply {
+                    isUpdate = true
+                    registerTime = LocalDateTime.now()
+                }
+                Log.d(javaClass.simpleName, "업데이트 하는 엔티티 : $checkListUpdate")
                 updateCheckListUpdate(checkListUpdate[0])
+                lastUpdatedDate = LocalDate.now()
                 return
             }
             //최근 접속일 이 일주일 미만일 시
             else {
+                Log.d(javaClass.simpleName, "일주일 미만, 부분 초기화")
                 checkList.forEachIndexed { index, item ->
                     if (!checkListUpdate[0].isUpdate) {
                         item.restartWeek.forEach { week ->
                             if (passedWeek.contains(week)) {
                                 item.done = false
+                                Log.d(javaClass.simpleName, "초기화 대상 : $item")
                             }
                         }
                         //마지막 일 시
                         if (index == checkList.size - 1) {
-                            checkListUpdate[0].isUpdate = true
-                            lastUpdatedDate = LocalDate.now()
+                            Log.d(javaClass.simpleName, "초기화 요일 정보 :${checkListUpdate}")
+                            checkListUpdate[0].apply {
+                                isUpdate = true
+                                registerTime = LocalDateTime.now()
+                            }
+                            Log.d(javaClass.simpleName, "업데이트 하는 엔티티 : $checkListUpdate")
                             updateCheckListUpdate(checkListUpdate[0])
+                            lastUpdatedDate = LocalDate.now()
                             return
                         }
                     }
@@ -218,14 +233,15 @@ class CheckListViewModel() : ViewModel() {
             }
     }
 
-    //오늘 ~ 이전 이전 업데이트 날짜 사이의 요일 구하기
+    //지난 날짜의 요일 리턴
     private fun getBetweenDate(lastUpdatedDate: LocalDate): Set<MyDayOfWeek> {
         val today = LocalDate.now()
         var mLastUpdatedDate = lastUpdatedDate
         val weeks = arrayListOf<DayOfWeek>()
         val reWeeks = arrayListOf<MyDayOfWeek>()
+        Log.d(javaClass.simpleName, "시작일 : $mLastUpdatedDate / 종료일 : $today")
 
-        //마지막 앱 시작 날짜 부터 오늘 까지 요일 리턴
+        //마지막 앱 시작 날짜 부터 어제까지 요일 리턴
         while (mLastUpdatedDate.isBefore(today)) {
             weeks.add(mLastUpdatedDate.dayOfWeek)
             mLastUpdatedDate = mLastUpdatedDate.plusDays(1)
@@ -233,6 +249,7 @@ class CheckListViewModel() : ViewModel() {
         weeks.forEach { week ->
             reWeeks.add(convertDayOfWeekToMyDayOfWeek(week))
         }
+        Log.d(javaClass.simpleName, "PassedWeek : ${reWeeks.toSet()}")
         return reWeeks.toSet()
     }
 
