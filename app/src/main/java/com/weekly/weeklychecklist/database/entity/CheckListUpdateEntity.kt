@@ -12,7 +12,7 @@ import java.time.LocalDateTime
 @TypeConverters(LocalDateTimeConverter::class)
 data class CheckListUpdateEntity(
     @ColumnInfo("list_name")
-    val listName: String,
+    var listName: String,
     @ColumnInfo("is_update")
     var isUpdate: Boolean,
     @ColumnInfo("register_time")

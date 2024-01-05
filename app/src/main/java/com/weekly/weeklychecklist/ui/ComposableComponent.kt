@@ -143,7 +143,6 @@ fun listTodo(
     }
     var dialogVisible by remember {mutableStateOf(false)}
     var currentIndex by remember {mutableStateOf(-1)}
-    val lazyColumnSize = clVM.checkList
 
 
     LazyColumn(
@@ -155,7 +154,7 @@ fun listTodo(
     ) {
         //리사이클러뷰
         items(
-            count = lazyColumnSize.size
+            count = clVM.checkList.size
         ) { index ->
             DraggableItem(dragDropState = dragDropState, index = index) { _ ->
                 //체크리스트(스와이프) 정의
@@ -726,6 +725,11 @@ fun ChecklistWriteBoard(
                                             registerTime = LocalDateTime.now()
                                         )
                                     )
+                                    clVM.checkListUpdate[0].apply {
+                                        listName = "default"
+                                        isUpdate = false
+                                        registerTime = LocalDateTime.now()
+                                    }
                                     //DB
                                     clVM.insertCheckList(
                                         listName = "default",
@@ -739,13 +743,17 @@ fun ChecklistWriteBoard(
                                         isUpdated = false,
                                         registerTime = LocalDateTime.now()
                                     )
-                                    clVM.getCheckLists()
                                 }
                                 //수정
                                 else {
                                     clVM.checkList[index].checklistContent = checklistContent
                                     clVM.checkList[index].restartWeek = myDayOfWeek
                                     Log.d("CheckListWriteBoard", "checkList update is start")
+                                    clVM.checkListUpdate[0].apply {
+                                        listName = "default"
+                                        isUpdate = false
+                                        registerTime = LocalDateTime.now()
+                                    }
                                     clVM.updateCheckList(
                                         idx = clVM.checkList[index].idx,
                                         listName = "default",
@@ -754,7 +762,6 @@ fun ChecklistWriteBoard(
                                         done = false,
                                         lastUpdatedDate = LocalDateTime.now()
                                     )
-                                    clVM.getCheckLists()
                                 }
                                 buttonOnClick()
                             } else
