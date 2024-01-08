@@ -1,11 +1,11 @@
 package com.weekly.weeklychecklist.vm
 
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -25,11 +26,9 @@ class CheckListViewModel() : ViewModel() {
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
 
-    var checkList = mutableStateListOf<CheckListEntity>()
-
-    private var _checkListE = MutableStateFlow(LatestUIState.Success(ArrayList()))
-    val checkListE: StateFlow<LatestUIState>
-        get() = _checkListE
+    private var _checkList = MutableStateFlow(ArrayList<CheckListEntity>())
+    val checkList: StateFlow<ArrayList<CheckListEntity>>
+        get() = _checkList
 
 
     var listName = mutableStateOf<String>("default")
@@ -40,6 +39,13 @@ class CheckListViewModel() : ViewModel() {
     var restartMainActivity: Boolean = false
     private val checkListRepository = CheckListDatabaseRepository.getInstance()
 
+    fun addCheckList(entity: CheckListEntity){
+        viewModelScope.launch {
+            _checkList.value.add(entity)
+            _checkList.emit(_checkList.value)
+//            _checkList = MutableStateFlow(_checkList.value)
+        }
+    }
     fun getCheckLists(){
         Log.d(TAG, "getDatabase")
         CoroutineScope(Dispatchers.IO).launch {
@@ -50,9 +56,9 @@ class CheckListViewModel() : ViewModel() {
             //DB get
             if (clList.isNotEmpty()) {
                 Log.d(javaClass.simpleName, "clList size == ${clList.size}, startRow == ${clList.first()}")
+                _checkList.value = clList
 
-//                _checkListE.value = LatestUIState.Success(clList)
-                checkList = clList.toMutableStateList()
+//                checkList2 = clList.toMutableStateList()
                 checkListUpdate = clUpdate
             }
         }
@@ -102,8 +108,8 @@ class CheckListViewModel() : ViewModel() {
     }
 
     fun updateCheckListAll() = CoroutineScope(Dispatchers.IO).launch {
-        if(checkList.isNotEmpty()){
-            checkList.forEach{ list ->
+        if(checkList.value.isNotEmpty()){
+            checkList.value.forEach{ list ->
                 checkListRepository.updateCheckList(
                     list.idx,
                     list.listName,
@@ -219,7 +225,7 @@ class CheckListViewModel() : ViewModel() {
         //일주일 이상 지났을 시 전체 초기화
             if (passedWeek.size >= 7) {
                 Log.d(javaClass.simpleName, "7일 이상 경과, 전체 초기화")
-                checkList.forEach { item ->
+                checkList.value.forEach { item ->
                     item.done = false
                 }
 //                cl.value.forEach{item ->
@@ -237,7 +243,7 @@ class CheckListViewModel() : ViewModel() {
             //최근 접속일 이 일주일 미만일 시
             else {
                 Log.d(javaClass.simpleName, "일주일 미만, 부분 초기화")
-                checkList.forEachIndexed { index, item ->
+                checkList.value.forEachIndexed { index, item ->
                     if (!checkListUpdate[0].isUpdate) {
                         item.restartWeek.forEach { week ->
                             if (passedWeek.contains(week)) {
@@ -246,7 +252,7 @@ class CheckListViewModel() : ViewModel() {
                             }
                         }
                         //마지막 일 시
-                        if (index == checkList.size - 1) {
+                        if (index == checkList.value.size - 1) {
                             Log.d(javaClass.simpleName, "초기화 요일 정보 :${checkListUpdate}")
                             checkListUpdate[0].apply {
                                 isUpdate = true
@@ -309,11 +315,11 @@ class CheckListViewModel() : ViewModel() {
         else -> ""
     }
 
-//    fun checkListProperties(fromIndex: Int, toIndex: Int) {
-//        cl.value = cl.value.apply {
-//            val text = this[fromIndex]
-//            this[fromIndex] = this[toIndex]
-//            this[toIndex] = text
-//        }
-//    }
+    fun swapProperties(fromIndex: Int, toIndex: Int) {
+        _checkList.value = _checkList.value.apply {
+            val text = this[fromIndex]
+            this[fromIndex] = this[toIndex]
+            this[toIndex] = text
+        }
+    }
 }

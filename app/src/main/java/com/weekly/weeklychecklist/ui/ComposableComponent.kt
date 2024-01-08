@@ -1,6 +1,5 @@
 package com.weekly.weeklychecklist.ui
 
-import android.app.Application.ActivityLifecycleCallbacks
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
@@ -59,6 +58,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,7 +74,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -88,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
@@ -135,12 +135,17 @@ fun listTodo(
     openFlag: MutableState<Boolean> = mutableStateOf(false)
 ): Pair<MutableState<Boolean>, MutableState<Int>> {
     val listState = rememberLazyListState()
+    val checklist by clVM.checkList.collectAsStateWithLifecycle()
+    val clList = checklist.toMutableStateList()
+
     val dragDropState = rememberDragDropStste(listState){ fromIndex, toIndex ->
-        clVM.checkList = clVM.checkList.apply {
-            val text = this[fromIndex]
-            this[fromIndex] = this[toIndex]
-            this[toIndex] = text
-        }
+        clVM.swapProperties(fromIndex, toIndex)
+        //test mutableStateFlow
+//        clVM.checkList2 = clVM.checkList2.apply {
+//            val text = this[fromIndex]
+//            this[fromIndex] = this[toIndex]
+//            this[toIndex] = text
+//        }
     }
     var dialogVisible by remember {mutableStateOf(false)}
     var currentIndex by remember {mutableStateOf(-1)}
@@ -155,7 +160,7 @@ fun listTodo(
     ) {
         //리사이클러뷰
         items(
-            count = clVM.checkList.size
+            count = clList.size
         ) { index ->
             DraggableItem(dragDropState = dragDropState, index = index) { _ ->
                 //체크리스트(스와이프) 정의
@@ -172,7 +177,7 @@ fun listTodo(
                                 easing = LinearOutSlowInEasing,
                             )
                         ),
-                    item = clVM.checkList[index],
+                    item = clList[index],
                     itemIndex = index
                 ) {
                     currentIndex = index
@@ -187,9 +192,9 @@ fun listTodo(
             positiveEvent = {
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
-                    val current = clVM.checkList[currentIndex]
+                    val current = clList[currentIndex]
                     delay(500L)
-                    clVM.checkList.remove(current)
+                    clList.remove(current)
                     clVM.deleteCheckList(current.idx)
                 }
                 //롤백 트리거
@@ -411,6 +416,7 @@ fun CustomToggleButton(
     val switchSize: Dp = 40.dp
 
     val clVM = viewModel<CheckListViewModel>()
+    val checklist by clVM.checkList.collectAsState()
     val interactionSource = remember { MutableInteractionSource() }
     var switchOn by remember { mutableStateOf(isCheck) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
@@ -434,7 +440,7 @@ fun CustomToggleButton(
                 interactionSource = interactionSource,
             ) {
                 switchOn = !switchOn
-                clVM.checkList[itemIndex].done = switchOn
+                checklist[itemIndex].done = switchOn
             },
         contentAlignment = Alignment.Center,
     ) {
@@ -628,11 +634,10 @@ fun ChecklistWriteBoard(
     fontSize: TextUnit = 24.sp,
     buttonOnClick: () -> Unit,
 ) {
-    var checklistContent = if(index == -1) "" else clVM.checkList[index].checklistContent
-    var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
-    val checkListRepository = CheckListDatabaseRepository()
+    val checklist by clVM.checkList.collectAsState()
+    var checklistContent = if(index == -1) "" else checklist[index].checklistContent
+    var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else checklist[index].restartWeek.toMutableSet() }
     var buttonFlag by remember { mutableStateOf(false) }
-    val db = CheckListDatabaseRepository.getInstance()
 
     Surface(
         modifier = Modifier
@@ -731,7 +736,7 @@ fun ChecklistWriteBoard(
                                         registerTime = LocalDateTime.now()
                                     )
                                     //UI
-                                    clVM.checkList.add(
+                                    clVM.addCheckList(
                                         CheckListEntity(
                                             listName = "default",
                                             checklistContent = checklistContent,
@@ -751,8 +756,8 @@ fun ChecklistWriteBoard(
                                 else {
                                     Log.d("CheckListWriteBoard", "checkList update is start")
 
-                                    clVM.checkList[index].checklistContent = checklistContent
-                                    clVM.checkList[index].restartWeek = myDayOfWeek
+                                    checklist[index].checklistContent = checklistContent
+                                    checklist[index].restartWeek = myDayOfWeek
 
                                     clVM.updateCheckListUpdate(
                                         clVM.checkListUpdate[0].apply {
@@ -761,7 +766,7 @@ fun ChecklistWriteBoard(
                                         }
                                     )
                                     clVM.updateCheckList(
-                                        idx = clVM.checkList[index].idx,
+                                        idx = checklist[index].idx,
                                         listName = "default",
                                         checkListContent = checklistContent,
                                         restartWeek = myDayOfWeek,
