@@ -93,6 +93,7 @@ import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
+import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.CheckListBackground
@@ -716,20 +717,6 @@ fun ChecklistWriteBoard(
                                 buttonFlag = false
                                 //새로작성
                                 if(index == -1) {
-                                    //UI
-                                    clVM.checkList.add(
-                                        CheckListEntity(
-                                            listName = "default",
-                                            checklistContent = checklistContent,
-                                            restartWeek = myDayOfWeek,
-                                            registerTime = LocalDateTime.now()
-                                        )
-                                    )
-                                    clVM.checkListUpdate[0].apply {
-                                        listName = "default"
-                                        isUpdate = false
-                                        registerTime = LocalDateTime.now()
-                                    }
                                     //DB
                                     clVM.insertCheckList(
                                         listName = "default",
@@ -743,17 +730,36 @@ fun ChecklistWriteBoard(
                                         isUpdated = false,
                                         registerTime = LocalDateTime.now()
                                     )
+                                    //UI
+                                    clVM.checkList.add(
+                                        CheckListEntity(
+                                            listName = "default",
+                                            checklistContent = checklistContent,
+                                            restartWeek = myDayOfWeek,
+                                            registerTime = LocalDateTime.now()
+                                        )
+                                    )
+                                    clVM.checkListUpdate.add(
+                                        CheckListUpdateEntity(
+                                            listName = "default",
+                                            isUpdate = false,
+                                            registerTime = LocalDateTime.now()
+                                        )
+                                    )
                                 }
                                 //수정
                                 else {
+                                    Log.d("CheckListWriteBoard", "checkList update is start")
+
                                     clVM.checkList[index].checklistContent = checklistContent
                                     clVM.checkList[index].restartWeek = myDayOfWeek
-                                    Log.d("CheckListWriteBoard", "checkList update is start")
-                                    clVM.checkListUpdate[0].apply {
-                                        listName = "default"
-                                        isUpdate = false
-                                        registerTime = LocalDateTime.now()
-                                    }
+
+                                    clVM.updateCheckListUpdate(
+                                        clVM.checkListUpdate[0].apply {
+                                            isUpdate = true
+                                            registerTime = LocalDateTime.now()
+                                        }
+                                    )
                                     clVM.updateCheckList(
                                         idx = clVM.checkList[index].idx,
                                         listName = "default",
