@@ -27,10 +27,6 @@ class CheckListViewModel() : ViewModel() {
 
     var checkList = mutableStateListOf<CheckListEntity>()
 
-    private var _checkListE = MutableStateFlow(LatestUIState.Success(ArrayList()))
-    val checkListE: StateFlow<LatestUIState>
-        get() = _checkListE
-
 
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
@@ -50,14 +46,11 @@ class CheckListViewModel() : ViewModel() {
             //DB get
             if (clList.isNotEmpty()) {
                 Log.d(javaClass.simpleName, "clList size == ${clList.size}, startRow == ${clList.first()}")
-
-//                _checkListE.value = LatestUIState.Success(clList)
                 checkList = clList.toMutableStateList()
                 checkListUpdate = clUpdate
             }
         }
     }
-
 
     private fun getCheckList(
         listName: String
@@ -114,18 +107,6 @@ class CheckListViewModel() : ViewModel() {
                 )
             }
         }
-//        if(cl.value.isNotEmpty()){
-//            cl.value.forEach{ list ->
-//                checkListRepository.updateCheckList(
-//                    list.idx,
-//                    list.listName,
-//                    list.checklistContent,
-//                    list.restartWeek,
-//                    list.done,
-//                    list.registerTime
-//                )
-//            }
-//        }
     }
     //TODO 로직 수정 필요함
 /*    fun updateIfDone(){
@@ -168,25 +149,25 @@ class CheckListViewModel() : ViewModel() {
         isUpdated: Boolean,
         registerTime: LocalDateTime
     ) = CoroutineScope(Dispatchers.IO).launch {
-//        if(checkListUpdate.isNotEmpty()){
-//            checkListUpdate.forEach {checkList ->
-//                if(checkList.listName == listName){
-//                    Log.d("dkdkdkdk", "dkdkdkdkdk")
-//                    return@launch
-//                }
-//            }
-//            checkListRepository.insertCheckListUpdate(
-//                listName,
-//                isUpdated,
-//                registerTime
-//            )
-//        } else{
+        if(checkListUpdate.isNotEmpty()){
+            checkListUpdate.forEach {checkList ->
+                if(checkList.listName == listName){
+                    Log.d("dkdkdkdk", "dkdkdkdkdk")
+                    return@launch
+                }
+            }
             checkListRepository.insertCheckListUpdate(
                 listName,
                 isUpdated,
                 registerTime
             )
-//        }
+        } else{
+            checkListRepository.insertCheckListUpdate(
+                listName,
+                isUpdated,
+                registerTime
+            )
+        }
     }
 
     fun updateCheckListUpdate(
@@ -195,6 +176,10 @@ class CheckListViewModel() : ViewModel() {
         checkListRepository.updateCheckListUpdate(
             checkListUpdateEntity
         )
+    }
+
+    fun forceRecomposition(){
+        checkList = ArrayList(checkList).toMutableStateList()
     }
 
     //요일마다 스위치 초기화
@@ -222,9 +207,6 @@ class CheckListViewModel() : ViewModel() {
                 checkList.forEach { item ->
                     item.done = false
                 }
-//                cl.value.forEach{item ->
-//                    item.done = false
-//                }
                 checkListUpdate[0].apply {
                     isUpdate = true
                     registerTime = LocalDateTime.now()

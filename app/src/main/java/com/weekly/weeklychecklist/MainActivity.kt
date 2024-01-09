@@ -65,18 +65,23 @@ class MainActivity : ComponentActivity() {
     var backPressedCount = 0
     var pressedTime = 0L
 
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        runBlocking {
+            //DB init
+            val db = CheckListDatabaseRepository.getInstance()
+            db.initDatabase(this@MainActivity)
+        }
+
         setContent {
             WeeklyChecklistApp(context = this, clVM = clVM)
         }
 
-        //DB init
-        val db = CheckListDatabaseRepository.getInstance()
-        db.initDatabase(this)
 
         clVM.getCheckLists()
-        //TODO 로직 실행되는 것 보다 DB 가 느리면 안될 가능성 있따.
 
 //        lifecycleScope.launch {
 //            repeatOnLifecycle(Lifecycle.State.STARTED){
@@ -131,14 +136,6 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         //요일 지나면 스위치 초기화
         clVM.switchInitialization()
-
-
-        //문제 찾았당!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        //최근 실행 상태일 시 메인 액티비티 강제 리컴포지션 (추후 반드시 수정할 것, 매우매우 잘못된 방식 이라고 생각!!!)
-        if (clVM.restartMainActivity) {
-            clVM.restartMainActivity = false
-            startActivity(Intent(this, MainActivity::class.java))
-        }
     }
 
     override fun onStop() {
