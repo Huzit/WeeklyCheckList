@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
@@ -11,6 +12,7 @@ import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import com.weekly.weeklychecklist.util.LatestUIState
+import com.weekly.weeklychecklist.util.SingletonHolderNoProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +28,7 @@ class CheckListViewModel() : ViewModel() {
     var isSwipToDeleteCancel: Boolean = false
 
     var checkList = mutableStateListOf<CheckListEntity>()
-
+    var isResume = mutableStateOf(true)
 
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
@@ -179,7 +181,7 @@ class CheckListViewModel() : ViewModel() {
     }
 
     fun forceRecomposition(){
-        checkList = ArrayList(checkList).toMutableStateList()
+        checkList = ArrayList(checkList.toList()).toMutableStateList()
     }
 
     //요일마다 스위치 초기화

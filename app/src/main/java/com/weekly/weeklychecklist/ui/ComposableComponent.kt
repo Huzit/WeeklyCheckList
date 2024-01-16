@@ -94,6 +94,7 @@ import com.weekly.weeklychecklist.R
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
+import com.weekly.weeklychecklist.rememberLifecycleEvent
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.CheckListBackground
