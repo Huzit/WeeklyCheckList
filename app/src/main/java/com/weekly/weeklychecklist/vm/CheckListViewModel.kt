@@ -1,22 +1,16 @@
 package com.weekly.weeklychecklist.vm
 
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.toMutableStateList
 import androidx.lifecycle.ViewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
-import com.weekly.weeklychecklist.util.LatestUIState
-import com.weekly.weeklychecklist.util.SingletonHolderNoProperty
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -28,7 +22,6 @@ class CheckListViewModel() : ViewModel() {
     var isSwipToDeleteCancel: Boolean = false
 
     var checkList = mutableStateListOf<CheckListEntity>()
-    var isResume = mutableStateOf(true)
 
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
