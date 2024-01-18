@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -72,12 +73,13 @@ class MainActivity : ComponentActivity() {
             val db = CheckListDatabaseRepository.getInstance()
             db.initDatabase(this@MainActivity)
         }
+        clVM.getCheckLists()
+        onBackPressedDispatcher.addCallback(backPressedCallBack(this))
 
         setContent {
             WeeklyChecklistApp(context = this, clVM = clVM)
         }
-        clVM.getCheckLists()
-        onBackPressedDispatcher.addCallback(backPressedCallBack(this))
+
     }
 
     //뒤로가기 콜백
