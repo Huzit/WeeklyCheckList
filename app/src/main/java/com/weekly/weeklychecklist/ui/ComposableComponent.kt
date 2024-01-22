@@ -514,7 +514,7 @@ fun customTextField(
 fun weekSelectButton(
     week: MyDayOfWeek,
     size: Dp = 35.dp,
-    fontSize: TextUnit = 15.sp,
+    fontSize: TextUnit = 13.sp,
     isClicked: Boolean = false,
     isContain: Boolean = false,
 ): MyDayOfWeek {

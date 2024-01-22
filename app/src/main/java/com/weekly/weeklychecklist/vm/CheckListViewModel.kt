@@ -9,6 +9,7 @@ import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
+import com.weekly.weeklychecklist.util.CheckListUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -246,6 +247,7 @@ class CheckListViewModel() : ViewModel() {
         var mLastUpdatedDate = lastUpdatedDate
         val weeks = arrayListOf<DayOfWeek>()
         val reWeeks = arrayListOf<MyDayOfWeek>()
+        val util = CheckListUtils()
         Log.d(javaClass.simpleName, "시작일 : $mLastUpdatedDate / 종료일 : $today")
 
         //마지막 앱 시작 날짜 부터 어제까지 요일 리턴
@@ -254,7 +256,7 @@ class CheckListViewModel() : ViewModel() {
             mLastUpdatedDate = mLastUpdatedDate.plusDays(1)
         }
         weeks.forEach { week ->
-            reWeeks.add(convertDayOfWeekToMyDayOfWeek(week))
+            reWeeks.add(util.convertDayOfWeekToMyDayOfWeek(week))
         }
         Log.d(javaClass.simpleName, "PassedWeek : ${reWeeks.toSet()}")
         return reWeeks.toSet()

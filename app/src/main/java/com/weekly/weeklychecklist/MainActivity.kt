@@ -50,12 +50,17 @@ import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
 import com.weekly.weeklychecklist.ui.listTodo
 import com.weekly.weeklychecklist.ui.theme.BoardBackground
 import com.weekly.weeklychecklist.ui.theme.WeeklyCheckListTheme
+import com.weekly.weeklychecklist.util.CheckListUtils
 import com.weekly.weeklychecklist.vm.CheckListViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 class MainActivity : ComponentActivity() {
@@ -161,7 +166,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     var openFlag = remember { mutableStateOf(false) }
     //ListTodo 리턴용
     var openInfo: Pair<MutableState<Boolean>, MutableState<Int>>
-
+    val util = CheckListUtils()
 
     //TODO 화면만 재 랜더링 시키면 문제 없음
     var refreshing by remember { mutableStateOf(false) }
@@ -181,6 +186,8 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     }
 
     key(refreshing) {
+        val today = LocalDate.now()
+        val week = util.convertDayOfWeekToMyDayOfWeek(today.dayOfWeek)
         WeeklyCheckListTheme {
             //뒷 배경
             Box(
@@ -202,9 +209,10 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                     //타이틀
                     Text(
                         modifier = Modifier.padding(20.dp),
-                        text = "",
+                        text = "${DateTimeFormatter.ofPattern("M월 DD일", Locale.KOREA).format(today)} ${week}요일",
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
+                        color = Color.White
                     )
                     //격자
                     Spacer(
