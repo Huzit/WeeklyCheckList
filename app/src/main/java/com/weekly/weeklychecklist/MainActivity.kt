@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        runBlocking {
+        CoroutineScope(Dispatchers.IO).launch {
             //DB init
             val db = CheckListDatabaseRepository.getInstance()
             db.initDatabase(this@MainActivity)
