@@ -31,6 +31,7 @@ class CheckListViewModel() : ViewModel() {
     //onResume ReComposition Trigger
     var restartMainActivity: Boolean = false
     private val checkListRepository = CheckListDatabaseRepository.getInstance()
+    var isFinished = false
 
     fun getCheckLists(){
         Log.d(TAG, "getDatabase")
@@ -45,6 +46,7 @@ class CheckListViewModel() : ViewModel() {
                 checkList = clList.toMutableStateList()
                 checkListUpdate = clUpdate
             }
+            isFinished = true
         }
     }
 
