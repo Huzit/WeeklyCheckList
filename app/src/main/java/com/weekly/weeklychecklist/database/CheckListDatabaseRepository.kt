@@ -9,6 +9,9 @@ import com.weekly.weeklychecklist.database.dao.CheckListUpdateDao
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import com.weekly.weeklychecklist.util.SingletonHolderNoProperty
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.IOException
 import java.time.LocalDateTime
 
@@ -21,7 +24,7 @@ class CheckListDatabaseRepository() {
     companion object: SingletonHolderNoProperty<CheckListDatabaseRepository>(::CheckListDatabaseRepository)
 
     //초기화
-    fun initDatabase(context: Context) {
+    fun initDatabase(context: Context) = CoroutineScope(Dispatchers.IO).launch {
         db = Room.databaseBuilder(
             context,
             CheckListDatabase::class.java,

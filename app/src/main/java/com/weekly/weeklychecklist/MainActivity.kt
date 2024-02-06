@@ -76,11 +76,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        CoroutineScope(Dispatchers.IO).launch {
-            //DB init
-            val db = CheckListDatabaseRepository.getInstance()
-            db.initDatabase(this@MainActivity)
-        }
+
+        //DB init
+        val db = CheckListDatabaseRepository.getInstance()
+        db.initDatabase(this@MainActivity)
+
         onBackPressedDispatcher.addCallback(backPressedCallBack(this))
 
         setContent {
@@ -99,7 +99,7 @@ class MainActivity : ComponentActivity() {
                         //splash 화면 중 데이터 베이스 init
                         clVM.getCheckLists()
                         runBlocking {
-                            delay(1000)
+                            delay(800)
                         }
                         false
                     }
