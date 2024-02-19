@@ -53,6 +53,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -61,6 +62,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -113,10 +115,10 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 @Composable
-fun Lifecycle.observeAsState(): State<Lifecycle.Event>{
+fun Lifecycle.observeAsState(): State<Lifecycle.Event> {
     val state = remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
-    DisposableEffect(this){
-        val observer = LifecycleEventObserver{ _, event ->
+    DisposableEffect(this) {
+        val observer = LifecycleEventObserver { _, event ->
             state.value = event
         }
         this@observeAsState.addObserver(observer)
@@ -136,16 +138,18 @@ fun listTodo(
     openFlag: MutableState<Boolean> = mutableStateOf(false)
 ): Pair<MutableState<Boolean>, MutableState<Int>> {
     val listState = rememberLazyListState()
-    val dragDropState = rememberDragDropStste(listState){ fromIndex, toIndex ->
+    var refreshing by remember { mutableStateOf(false) }
+    var dialogVisible by remember { mutableStateOf(false) }
+    var currentIndex by remember { mutableStateOf(-1) }
+
+    val dragDropState = rememberDragDropStste(listState) { fromIndex, toIndex ->
         clVM.checkList = clVM.checkList.apply {
             val text = this[fromIndex]
             this[fromIndex] = this[toIndex]
             this[toIndex] = text
+            refreshing = !refreshing
         }
     }
-    var dialogVisible by remember {mutableStateOf(false)}
-    var currentIndex by remember {mutableStateOf(-1)}
-
 
     LazyColumn(
         modifier = Modifier
@@ -154,7 +158,6 @@ fun listTodo(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        //리사이클러뷰
         items(
             count = clVM.checkList.size
         ) { index ->
@@ -169,7 +172,7 @@ fun listTodo(
                         }
                         .animateItemPlacement(
                             animationSpec = tween(
-                                durationMillis = 300,
+                                durationMillis = 1000,
                                 easing = LinearOutSlowInEasing,
                             )
                         ),
@@ -182,14 +185,14 @@ fun listTodo(
             }
         }
     }
-    if(dialogVisible) {
+    if (dialogVisible) {
         CustomAlertDialog(
             message = "삭제하시겠습니까?",
             positiveEvent = {
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
                     val current = clVM.checkList[currentIndex]
-                    delay(500L)
+//                    delay(500L)
                     clVM.checkList.remove(current)
                     clVM.deleteCheckList(current.idx)
                 }
@@ -205,49 +208,20 @@ fun listTodo(
     return Pair(openFlag, openIndex)
 }
 
-//플로팅 버튼
-@Composable
-fun FloatingActions(context: Context, clVM: CheckListViewModel) {
-    var isPressed = remember { mutableStateOf(false) }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(80.dp)
-            .padding(bottom = 10.dp, end = 10.dp),
-        contentAlignment = Alignment.TopEnd
-    ) {
-        FloatingActionButton(
-            modifier = Modifier.size(70.dp),
-            shape = CircleShape,
-            containerColor = ConfirmButton,
-            onClick = {
-                isPressed.value = !isPressed.value
-            },
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.add),
-                tint = Color.White,
-                contentDescription = "Add"
-            )
-        }
-    }
-    //플로팅 버튼 클릭 이벤트
-    isPressed = checkListWriteBoardWithBackGround(clVM = clVM, isPressed = isPressed)
-}
-
 //체크리스트 항목
 @Composable
 fun CheckListBox(
     item: CheckListEntity,
     itemIndex: Int
 ) {
+    val clVM = viewModel<CheckListViewModel>()
     val configuration = LocalConfiguration.current
     val backgroundWidth: Dp = configuration.screenWidthDp.minus(20).dp
     val backgroundHeight: Dp = 72.dp
     val width = configuration.screenWidthDp.minus(160).dp
     val height = 60.dp
     val cornerSize = 20
-    val done = remember { mutableStateOf(item.done) }
+    var done = clVM.checkList[itemIndex].done
 
     Surface(
         modifier = Modifier
@@ -308,8 +282,8 @@ fun CheckListBox(
             //sort
             val myDayOfWeek = listOf<String>("월", "화", "수", "목", "금", "토", "일")
 
-            for(day in myDayOfWeek){
-                if(weeks.contains(day))
+            for (day in myDayOfWeek) {
+                if (weeks.contains(day))
                     result.append("$day ")
             }
             if (result.isNotEmpty())
@@ -323,7 +297,9 @@ fun CheckListBox(
                     fontSize = dpToSp(dp = 10.dp),
                     modifier = Modifier.padding(start = 7.dp)
                 )
-                CustomToggleButton(isCheck = done.value, itemIndex = itemIndex)
+                key(clVM.customToggleRefreshing){
+                    CustomToggleButton(isCheck = done, itemIndex = itemIndex)
+                }
             }
         }
     }
@@ -348,15 +324,15 @@ fun ChecklistSwipable(
                 dismissToDelete()
                 clVM.isSwipToDeleteCancel = false
                 true
-            } else{
+            } else {
                 false
             }
         }
     )
     //삭제 작업 완료됬을 때 롤백
-    if(clVM.isSwipToDeleteCancel)
-        if(dismissState.currentValue != DismissValue.Default){
-            LaunchedEffect(Unit){
+    if (clVM.isSwipToDeleteCancel)
+        if (dismissState.currentValue != DismissValue.Default) {
+            LaunchedEffect(Unit) {
                 dismissState.reset()
             }
         }
@@ -369,7 +345,7 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            CheckListBox(item, itemIndex)
+            CheckListBox(clVM.checkList[itemIndex], itemIndex)
         },
         background = {
             val color by animateColorAsState(SwipeBackground.copy(), label = "")
@@ -526,7 +502,7 @@ fun weekSelectButton(
     //중복 자료 방지를 위해 Set 사용
     val returnSet = remember { mutableSetOf<MyDayOfWeek>() }
     //수정 시 DB의 요일에 포함
-    if(isContain){
+    if (isContain) {
         returnSet.add(week)
         backgroundColor = ClickedYellow
         isContain = false
@@ -544,11 +520,11 @@ fun weekSelectButton(
             border = BorderStroke(2.dp, Color.Black),
             onClick = {
                 isClicked = !isClicked
-                backgroundColor = if(isClicked){
+                backgroundColor = if (isClicked) {
                     //클릭 시 추가
                     returnSet.add(week)
                     ClickedYellow
-                } else{
+                } else {
                     //한번 더 클릭하면 삭제
                     returnSet.remove(week)
                     Color.Transparent
@@ -577,7 +553,7 @@ fun checkListWriteBoardWithBackGround(
     val mIsPressed = isPressed
     val halfHeight = LocalConfiguration.current.screenHeightDp / 2
     //작성보드 뒷 배경
-    if(mIsPressed.value) {
+    if (mIsPressed.value) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -604,7 +580,7 @@ fun checkListWriteBoardWithBackGround(
                 )
     ) {
         //수정 시
-        if(index > -1)
+        if (index > -1)
             ChecklistWriteBoard(clVM = clVM, index = index) {
                 //확인 클릭 시
                 mIsPressed.value = false
@@ -620,6 +596,7 @@ fun checkListWriteBoardWithBackGround(
     }
     return mIsPressed
 }
+
 //체크리스트 입력 보드
 @Composable
 fun ChecklistWriteBoard(
@@ -629,8 +606,9 @@ fun ChecklistWriteBoard(
     fontSize: TextUnit = 24.sp,
     buttonOnClick: () -> Unit,
 ) {
-    var checklistContent = if(index == -1) "" else clVM.checkList[index].checklistContent
-    var myDayOfWeek = remember { if(index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
+    var checklistContent = if (index == -1) "" else clVM.checkList[index].checklistContent
+    var myDayOfWeek =
+        remember { if (index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
     val checkListRepository = CheckListDatabaseRepository()
     var buttonFlag by remember { mutableStateOf(false) }
     val db = CheckListDatabaseRepository.getInstance()
@@ -696,7 +674,11 @@ fun ChecklistWriteBoard(
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (week in MyDayOfWeek.values().filter { it != MyDayOfWeek.널 }) {
                             //클릭 후 취소 및 수정 시 선택된 요일 반영
-                            if (weekSelectButton(week, isContain = myDayOfWeek.contains(week)) == MyDayOfWeek.널)
+                            if (weekSelectButton(
+                                    week,
+                                    isContain = myDayOfWeek.contains(week)
+                                ) == MyDayOfWeek.널
+                            )
                                 myDayOfWeek.remove(week)
                             else
                                 myDayOfWeek.add(week)
@@ -714,10 +696,10 @@ fun ChecklistWriteBoard(
                         onClick = {
                             Log.d("CheckListWriteBoard", "current selected index : $index")
                             //요일, 내용 검증
-                            if(checklistContent.isNotEmpty() && myDayOfWeek.isNotEmpty()){
+                            if (checklistContent.isNotEmpty() && myDayOfWeek.isNotEmpty()) {
                                 buttonFlag = false
                                 //새로작성
-                                if(index == -1) {
+                                if (index == -1) {
                                     //DB
                                     clVM.insertCheckList(
                                         listName = "default",
@@ -775,7 +757,7 @@ fun ChecklistWriteBoard(
                                 buttonFlag = true
                         }
                     ) {
-                        if(buttonFlag) {
+                        if (buttonFlag) {
                             if (checklistContent.isEmpty())
                                 Toast.makeText(
                                     LocalContext.current,
@@ -810,6 +792,7 @@ fun CustomSpacer(height: Dp) {
             .height(height)
     )
 }
+
 //다이얼로그
 @Composable
 fun CustomAlertDialog(
@@ -880,6 +863,7 @@ fun CustomAlertDialog(
         shape = RoundedCornerShape(24.dp)
     )
 }
+
 //Custom SnackBar
 //visible과 LaunchedEffect로 직접 종료 트리거 설정해줘야함
 @Composable

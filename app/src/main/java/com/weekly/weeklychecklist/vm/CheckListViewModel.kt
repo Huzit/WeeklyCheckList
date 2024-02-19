@@ -23,7 +23,7 @@ class CheckListViewModel() : ViewModel() {
     var isSwipToDeleteCancel: Boolean = false
 
     var checkList = mutableStateListOf<CheckListEntity>()
-
+    val customToggleRefreshing = mutableStateOf(false)
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     val isSwipe = mutableStateOf(false)
@@ -150,7 +150,6 @@ class CheckListViewModel() : ViewModel() {
         if(checkListUpdate.isNotEmpty()){
             checkListUpdate.forEach {checkList ->
                 if(checkList.listName == listName){
-                    Log.d("dkdkdkdk", "dkdkdkdkdk")
                     return@launch
                 }
             }

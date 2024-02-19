@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.database.CheckListDatabase
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.CustomSnackBar
@@ -64,6 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -99,7 +101,7 @@ class MainActivity : ComponentActivity() {
                         //splash 화면 중 데이터 베이스 init
                         clVM.getCheckLists()
                         runBlocking {
-                            delay(800)
+                            delay(100)
                         }
                         false
                     }
@@ -197,9 +199,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
             Lifecycle.Event.ON_RESUME -> {
                 //요일 지나면 스위치 초기화
                 clVM.switchInitialization()
-                refreshing = true
-                delay(1000)
-                refreshing = false
+                refreshing = !refreshing
             }
             else -> {}
         }
@@ -248,16 +248,33 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                             modifier = Modifier
                                 .size(30.dp)
                                 .clickable(
-                                interactionSource = remember {
-                                    MutableInteractionSource()
+                                    interactionSource = remember {
+                                        MutableInteractionSource()
+                                    },
+                                    indication = CheckListUtils.CustomIndication
+                                ) {
+                                    isPressed.value = !isPressed.value
                                 },
-                                indication = CheckListUtils.CustomIndication
-                            ) {
-                                isPressed.value = !isPressed.value
-                            },
                             painter = painterResource(id = R.drawable.add),
                             contentDescription = "추가",
                             tint = Color.White,
+                        )
+                        //요일 초기화 버튼
+                        Icon(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .clickable(
+                                        interactionSource = remember {
+                                            MutableInteractionSource()
+                                        },
+                                        indication = CheckListUtils.CustomIndication
+                                    ) {
+                                        clVM.checkListUpdate[0].registerTime = LocalDateTime.now()
+                                        clVM.updateCheckListUpdate(clVM.checkListUpdate[0])
+                                    },
+                        painter = painterResource(id = R.drawable.add),
+                        contentDescription = "추가",
+                        tint = Color.Red,
                         )
                     }
                     //격자

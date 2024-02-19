@@ -55,7 +55,7 @@ class CheckListDatabaseRepository() {
     suspend fun updateCheckListUpdate(
         checkListUpdateEntity: CheckListUpdateEntity,
     ){
-        //TODO UpdateQuery 필요
+        Log.d(javaClass.simpleName, "업데이트 내역 : $checkListUpdateEntity")
         checkListUpdateDao.updateCheckListUpdateDate(
             checkListUpdateEntity.listName,
             checkListUpdateEntity.isUpdate,
