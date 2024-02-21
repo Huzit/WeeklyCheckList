@@ -102,7 +102,7 @@ class MainActivity : ComponentActivity() {
                         clVM.getCheckLists()
                         clVM.isSplashed = true
                         runBlocking {
-                            delay(10)
+                            delay(100)
                         }
                         //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
                         clVM.switchInitialization()

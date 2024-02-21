@@ -169,9 +169,9 @@ fun listTodo(
                                 easing = LinearOutSlowInEasing,
                             )
                         ),
+                    entity = clVM.checkList[index],
                     itemIndex = index
                 ) {
-                    //여기 삭제 이벤트 어디감????
                     currentIndex = index
                     dialogVisible = true
                 }
@@ -185,9 +185,9 @@ fun listTodo(
                 CoroutineScope(Dispatchers.Default).launch {
                     //너무 빨리 삭제되면 swipe 애니메이션이 제대로 출력 안됨
                     val current = clVM.checkList[currentIndex]
-//                    delay(500L)
                     clVM.checkList.remove(current)
                     clVM.deleteCheckList(current.idx)
+//                    delay(500L)
                 }
                 //롤백 트리거
                 clVM.isSwipToDeleteCancel = true
@@ -204,7 +204,7 @@ fun listTodo(
 //체크리스트 항목
 @Composable
 fun CheckListBox(
-    item: CheckListEntity,
+    entity: CheckListEntity,
     itemIndex: Int
 ) {
     val clVM = viewModel<CheckListViewModel>()
@@ -252,7 +252,7 @@ fun CheckListBox(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Text(
-                        text = item.checklistContent,
+                        text = entity.checklistContent,
                         modifier = Modifier
                             .padding(start = 10.dp, end = 10.dp)
                             .fillMaxWidth(),
@@ -267,7 +267,7 @@ fun CheckListBox(
             Spacer(modifier = Modifier.weight(1f))
 
             //무작위로 들어오는 요일을 월 ~ 금으로 정렬
-            val weeks = item.restartWeek.toString().filter { it != ' ' && it != '[' && it != ']' }
+            val weeks = entity.restartWeek.toString().filter { it != ' ' && it != '[' && it != ']' }
                 .split(",")
             val result = StringBuilder()
             var resultWeeks = ""
@@ -289,7 +289,7 @@ fun CheckListBox(
                     fontSize = dpToSp(dp = 10.dp),
                     modifier = Modifier.padding(start = 7.dp)
                 )
-                CustomToggleButton(itemIndex = itemIndex)
+                CustomToggleButton(itemIndex = itemIndex, entity = entity)
             }
         }
     }
@@ -301,6 +301,7 @@ fun CheckListBox(
 fun ChecklistSwipable(
     modifier: Modifier,
     itemIndex: Int,
+    entity: CheckListEntity,
     dismissToDelete: () -> Unit,
 ) {
     val clVM = viewModel<CheckListViewModel>()
@@ -334,7 +335,8 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            CheckListBox(clVM.checkList[itemIndex], itemIndex)
+            Log.d(TAG, "${clVM.checkList.size} $itemIndex")
+            CheckListBox(entity, itemIndex)
         },
         background = {
             val color by animateColorAsState(SwipeBackground.copy(), label = "")
@@ -364,6 +366,7 @@ fun ChecklistSwipable(
 //커스텀 스위치
 @Composable
 fun CustomToggleButton(
+    entity: CheckListEntity,
     itemIndex: Int
 ) {
     val width: Dp = 95.dp
@@ -382,7 +385,8 @@ fun CustomToggleButton(
 
     key(clVM.customToggleRefreshingDraggableState) {
         Log.d(TAG, "드래그 키 시작")
-        switchOn = clVM.checkList[itemIndex].done
+//        switchOn = clVM.checkList[itemIndex].done
+        switchOn = entity.done
     }
     //테두리 Border
     Box(
@@ -905,8 +909,8 @@ fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
 fun SwitchPreview() {
     Column {
         weekSelectButton(MyDayOfWeek.널)
-        CustomToggleButton(0)
-        CustomToggleButton(0)
+//        CustomToggleButton(0)
+//        CustomToggleButton(0)
         ChecklistWriteBoard(clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
