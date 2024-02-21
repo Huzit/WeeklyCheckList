@@ -49,8 +49,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.weekly.weeklychecklist.database.CheckListDatabase
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.ui.CustomSnackBar
 import com.weekly.weeklychecklist.ui.checkListWriteBoardWithBackGround
@@ -96,13 +94,18 @@ class MainActivity : ComponentActivity() {
                     return if(clVM.isFinished){
                         //다 되면 화면 시작
                         content.viewTreeObserver.removeOnPreDrawListener(this)
+                        Log.d(javaClass.simpleName, "Splash 화면 DB 통신 완료")
                         true
                     } else {
                         //splash 화면 중 데이터 베이스 init
+                        Log.d(javaClass.simpleName, "Splash 화면 DB 통신 중")
                         clVM.getCheckLists()
+                        clVM.isSplashed = true
                         runBlocking {
-                            delay(100)
+                            delay(10)
                         }
+                        //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
+                        clVM.switchInitialization()
                         false
                     }
                 }
@@ -136,26 +139,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onStop() {
-        super.onStop()
-//        clVM.updateIfDone()
-        clVM.updateCheckListAll()
-    }
-
-
-    override fun onPause() {
-        clVM.restartMainActivity = true
-        super.onPause()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 }
 
@@ -198,8 +181,17 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
         when(lifecycleEvent){
             Lifecycle.Event.ON_RESUME -> {
                 //요일 지나면 스위치 초기화
-                clVM.switchInitialization()
-                refreshing = !refreshing
+                if(!clVM.isSplashed) {
+                    Log.d(javaClass.simpleName, "onResume 스위치 초기화")
+                    clVM.switchInitialization()
+                    refreshing = !refreshing
+                    clVM.customToggleRefreshingOnResumeState.value = refreshing
+                }
+            }
+            Lifecycle.Event.ON_PAUSE -> {
+                Log.d(javaClass.simpleName, "onPause DB Insert")
+                clVM.isSplashed = false
+                clVM.updateCheckListAll()
             }
             else -> {}
         }
@@ -238,7 +230,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                         //타이틀
                         Text(
                             modifier = Modifier.padding(20.dp),
-                            text = "${DateTimeFormatter.ofPattern("M월 DD일", Locale.KOREA).format(today)} ${week}요일",
+                            text = "${DateTimeFormatter.ofPattern("M월 dd일", Locale.KOREA).format(today)} ${week}요일",
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp,
                             color = Color.White

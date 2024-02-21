@@ -21,15 +21,14 @@ class CheckListViewModel() : ViewModel() {
     private val TAG = "CheckListViewModel"
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
-
+    var isSplashed = false
     var checkList = mutableStateListOf<CheckListEntity>()
-    val customToggleRefreshing = mutableStateOf(false)
+    var customToggleRefreshingOnResumeState = mutableStateOf(false)
+    var customToggleRefreshingDraggableState = mutableStateOf(false)
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     val isSwipe = mutableStateOf(false)
 
-    //onResume ReComposition Trigger
-    var restartMainActivity: Boolean = false
     private val checkListRepository = CheckListDatabaseRepository.getInstance()
     var isFinished = false
 

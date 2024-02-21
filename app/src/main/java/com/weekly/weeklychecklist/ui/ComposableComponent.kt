@@ -1,7 +1,5 @@
 package com.weekly.weeklychecklist.ui
 
-import android.app.Application.ActivityLifecycleCallbacks
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -51,9 +49,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -66,7 +62,6 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
@@ -76,7 +71,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -93,10 +87,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.R
-import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
-import com.weekly.weeklychecklist.rememberLifecycleEvent
 import com.weekly.weeklychecklist.ui.theme.AmbientGray
 import com.weekly.weeklychecklist.ui.theme.BorderColor
 import com.weekly.weeklychecklist.ui.theme.CheckListBackground
@@ -114,6 +106,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
+const val TAG = "ComposableContent"
 @Composable
 fun Lifecycle.observeAsState(): State<Lifecycle.Event> {
     val state = remember { mutableStateOf(Lifecycle.Event.ON_ANY) }
@@ -138,7 +131,6 @@ fun listTodo(
     openFlag: MutableState<Boolean> = mutableStateOf(false)
 ): Pair<MutableState<Boolean>, MutableState<Int>> {
     val listState = rememberLazyListState()
-    var refreshing by remember { mutableStateOf(false) }
     var dialogVisible by remember { mutableStateOf(false) }
     var currentIndex by remember { mutableStateOf(-1) }
 
@@ -147,8 +139,9 @@ fun listTodo(
             val text = this[fromIndex]
             this[fromIndex] = this[toIndex]
             this[toIndex] = text
-            refreshing = !refreshing
         }
+        clVM.customToggleRefreshingDraggableState.value = !clVM.customToggleRefreshingDraggableState.value
+        Log.d(TAG, "드래그 이벤트 발생")
     }
 
     LazyColumn(
@@ -176,9 +169,9 @@ fun listTodo(
                                 easing = LinearOutSlowInEasing,
                             )
                         ),
-                    item = clVM.checkList[index],
                     itemIndex = index
                 ) {
+                    //여기 삭제 이벤트 어디감????
                     currentIndex = index
                     dialogVisible = true
                 }
@@ -221,8 +214,7 @@ fun CheckListBox(
     val width = configuration.screenWidthDp.minus(160).dp
     val height = 60.dp
     val cornerSize = 20
-    var done = clVM.checkList[itemIndex].done
-
+    Log.d(TAG, "checklistBox draw event")
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
@@ -297,9 +289,7 @@ fun CheckListBox(
                     fontSize = dpToSp(dp = 10.dp),
                     modifier = Modifier.padding(start = 7.dp)
                 )
-                key(clVM.customToggleRefreshing){
-                    CustomToggleButton(isCheck = done, itemIndex = itemIndex)
-                }
+                CustomToggleButton(itemIndex = itemIndex)
             }
         }
     }
@@ -310,7 +300,6 @@ fun CheckListBox(
 @Composable
 fun ChecklistSwipable(
     modifier: Modifier,
-    item: CheckListEntity,
     itemIndex: Int,
     dismissToDelete: () -> Unit,
 ) {
@@ -375,7 +364,6 @@ fun ChecklistSwipable(
 //커스텀 스위치
 @Composable
 fun CustomToggleButton(
-    isCheck: Boolean,
     itemIndex: Int
 ) {
     val width: Dp = 95.dp
@@ -389,9 +377,13 @@ fun CustomToggleButton(
 
     val clVM = viewModel<CheckListViewModel>()
     val interactionSource = remember { MutableInteractionSource() }
-    var switchOn by remember { mutableStateOf(isCheck) }
+    var switchOn by remember { mutableStateOf(clVM.checkList[itemIndex].done) }
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
 
+    key(clVM.customToggleRefreshingDraggableState) {
+        Log.d(TAG, "드래그 키 시작")
+        switchOn = clVM.checkList[itemIndex].done
+    }
     //테두리 Border
     Box(
         modifier = Modifier
@@ -609,9 +601,7 @@ fun ChecklistWriteBoard(
     var checklistContent = if (index == -1) "" else clVM.checkList[index].checklistContent
     var myDayOfWeek =
         remember { if (index == -1) mutableSetOf(MyDayOfWeek.널) else clVM.checkList[index].restartWeek.toMutableSet() }
-    val checkListRepository = CheckListDatabaseRepository()
     var buttonFlag by remember { mutableStateOf(false) }
-    val db = CheckListDatabaseRepository.getInstance()
 
     Surface(
         modifier = Modifier
@@ -913,11 +903,10 @@ fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
 @Preview(showBackground = false)
 @Composable
 fun SwitchPreview() {
-    val context = LocalContext.current
     Column {
         weekSelectButton(MyDayOfWeek.널)
-        CustomToggleButton(isCheck = true, 0)
-        CustomToggleButton(isCheck = false, 0)
+        CustomToggleButton(0)
+        CustomToggleButton(0)
         ChecklistWriteBoard(clVM = CheckListViewModel()) {}
         CustomSnackBar(visible = true, text = "TestText") {
         }
