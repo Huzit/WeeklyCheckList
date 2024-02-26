@@ -15,7 +15,7 @@ android {
         minSdk 26
         targetSdk 33
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -25,10 +25,20 @@ android {
         multiDexEnabled true
     }
 
+    signingConfigs{
+        releaseWithSignedKey{
+            storeFile file(signedStoreFile)
+            storePassword signedStorePassword
+            keyAlias signedKeyAlias
+            keyPassword signedKeyPassword
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.releaseWithSignedKey
         }
     }
     compileOptions {

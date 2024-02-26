@@ -140,6 +140,13 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onPause(){
+        super.onPause()
+        Log.d(javaClass.simpleName, "onPause DB Insert")
+        clVM.isSplashed = false
+        clVM.updateCheckListAll()
+    }
 }
 
 @Composable
@@ -187,11 +194,6 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                     refreshing = !refreshing
                     clVM.customToggleRefreshingOnResumeState.value = refreshing
                 }
-            }
-            Lifecycle.Event.ON_PAUSE -> {
-                Log.d(javaClass.simpleName, "onPause DB Insert")
-                clVM.isSplashed = false
-                clVM.updateCheckListAll()
             }
             else -> {}
         }
@@ -251,8 +253,8 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                             contentDescription = "추가",
                             tint = Color.White,
                         )
-                        //요일 초기화 버튼
-                        Icon(
+                        //test 요일 초기화 버튼
+                        /*Icon(
                                 modifier = Modifier
                                     .size(30.dp)
                                     .clickable(
@@ -267,7 +269,7 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                         painter = painterResource(id = R.drawable.add),
                         contentDescription = "추가",
                         tint = Color.Red,
-                        )
+                        )*/
                     }
                     //격자
                     Spacer(

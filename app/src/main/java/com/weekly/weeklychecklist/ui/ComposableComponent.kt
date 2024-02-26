@@ -141,7 +141,6 @@ fun listTodo(
             this[toIndex] = text
         }
         clVM.customToggleRefreshingDraggableState.value = !clVM.customToggleRefreshingDraggableState.value
-        Log.d(TAG, "드래그 이벤트 발생")
     }
 
     LazyColumn(
@@ -214,7 +213,6 @@ fun CheckListBox(
     val width = configuration.screenWidthDp.minus(160).dp
     val height = 60.dp
     val cornerSize = 20
-    Log.d(TAG, "checklistBox draw event")
     Surface(
         modifier = Modifier
             .size(width = backgroundWidth, height = backgroundHeight),
@@ -335,7 +333,6 @@ fun ChecklistSwipable(
         directions = setOf(DismissDirection.EndToStart),
         //swipe 되기 전 보여줄 화면
         dismissContent = {
-            Log.d(TAG, "${clVM.checkList.size} $itemIndex")
             CheckListBox(entity, itemIndex)
         },
         background = {
@@ -384,7 +381,6 @@ fun CustomToggleButton(
     val alignment by animateAlignmentAsState(if (switchOn) 1f else -1f)
 
     key(clVM.customToggleRefreshingDraggableState) {
-        Log.d(TAG, "드래그 키 시작")
 //        switchOn = clVM.checkList[itemIndex].done
         switchOn = entity.done
     }
