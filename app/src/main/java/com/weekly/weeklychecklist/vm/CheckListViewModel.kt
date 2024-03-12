@@ -1,9 +1,12 @@
 package com.weekly.weeklychecklist.vm
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
@@ -21,9 +24,11 @@ class CheckListViewModel() : ViewModel() {
     private val TAG = "CheckListViewModel"
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
+    //스플래시 화면 true : 지남, false : 안지남
     var isSplashed = false
+    val onResumeRefreshed = mutableStateOf(false)
     var checkList = mutableStateListOf<CheckListEntity>()
-    var customToggleRefreshingOnResumeState = mutableStateOf(false)
+//    var customToggleRefreshingOnResumeState = mutableStateOf(false)
     var customToggleRefreshingDraggableState = mutableStateOf(false)
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
@@ -179,7 +184,7 @@ class CheckListViewModel() : ViewModel() {
     }
 
     //요일마다 스위치 초기화
-    fun switchInitialization() {
+    fun switchInitialization(context: Context) {
         /***
          * isUpdate는 onDestroy 시 다시 시작하므로 알아서 false
          * 만약, 포그라운드에서 하루 이상이 지난다면 onDestroy를 못 탈수도 있으므로 false
@@ -193,10 +198,16 @@ class CheckListViewModel() : ViewModel() {
             //오늘 이전일 시
             if (lastUpdatedDate.isBefore(LocalDate.now()))
                 checkListUpdate[0].isUpdate = false
-//        }
             val passedWeek = getBetweenDate(lastUpdatedDate)
+            if(passedWeek.isNotEmpty())
+                Toast.makeText(
+                    context,
+                    if(passedWeek.size == 7)
+                        "일주일이 지났습니다"
+                    else
+                        "${passedWeek.toString().filter { it != '[' && it != ']' }}요일이 지났습니다",
+                    Toast.LENGTH_LONG).show()
 
-//        if (checkListUpdate.isNotEmpty())
         //일주일 이상 지났을 시 전체 초기화
             if (passedWeek.size >= 7) {
                 Log.d(javaClass.simpleName, "7일 이상 경과, 전체 초기화")

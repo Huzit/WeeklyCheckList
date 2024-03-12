@@ -105,7 +105,7 @@ class MainActivity : ComponentActivity() {
                             delay(100)
                         }
                         //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
-                        clVM.switchInitialization()
+                        clVM.switchInitialization(this@MainActivity)
                         false
                     }
                 }
@@ -138,6 +138,15 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        if(!clVM.isSplashed) {
+            Log.d(javaClass.simpleName, "onResume 스위치 초기화")
+            clVM.switchInitialization(this)
+            clVM.onResumeRefreshed.value = !clVM.onResumeRefreshed.value
         }
     }
 
@@ -181,23 +190,23 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     var openInfo: Pair<MutableState<Boolean>, MutableState<Int>>
     val util = CheckListUtils()
     //onResume 리컴포지션용
-    var refreshing by remember { mutableStateOf(false) }
-    val lifecycleEvent = rememberLifecycleEvent()
+    var refreshing by remember { clVM.onResumeRefreshed }
+//    val lifecycleEvent = rememberLifecycleEvent()
 
-    LaunchedEffect(lifecycleEvent){
-        when(lifecycleEvent){
-            Lifecycle.Event.ON_RESUME -> {
-                //요일 지나면 스위치 초기화
-                if(!clVM.isSplashed) {
-                    Log.d(javaClass.simpleName, "onResume 스위치 초기화")
-                    clVM.switchInitialization()
-                    refreshing = !refreshing
-                    clVM.customToggleRefreshingOnResumeState.value = refreshing
-                }
-            }
-            else -> {}
-        }
-    }
+//    LaunchedEffect(lifecycleEvent){
+//        when(lifecycleEvent){
+//            Lifecycle.Event.ON_RESUME -> {
+//                //요일 지나면 스위치 초기화
+//                if(!clVM.isSplashed) {
+//                    Log.d(javaClass.simpleName, "onResume 스위치 초기화")
+//                    clVM.switchInitialization()
+//                    refreshing = !refreshing
+////                    clVM.customToggleRefreshingOnResumeState.value = refreshing
+//                }
+//            }
+//            else -> {}
+//        }
+//    }
 
     key(refreshing) {
         val today = LocalDate.now()
@@ -254,7 +263,14 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                             tint = Color.White,
                         )
                         //test 요일 초기화 버튼
-                        /*Icon(
+                        /*Text(
+                            modifier = Modifier.padding(20.dp),
+                            text = if(clVM.checkListUpdate.size != 0) "${DateTimeFormatter.ofPattern("M월 dd일", Locale.KOREA).format(clVM.checkListUpdate[0].registerTime)}" else "",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color.Red
+                        )
+                        Icon(
                                 modifier = Modifier
                                     .size(30.dp)
                                     .clickable(
