@@ -191,7 +191,7 @@ class CheckListViewModel() : ViewModel() {
          ***/
         var lastUpdatedDate: LocalDate = LocalDate.now()
 
-        Log.d("CheckListViewModel", "checkList isNotEmpty = ${checkListUpdate.isNotEmpty()}")
+        Log.d("CheckListViewModel", "checkList isEmpty = ${checkListUpdate.isEmpty()}")
 
         if (checkListUpdate.isNotEmpty()) {
             lastUpdatedDate = checkListUpdate[0].registerTime.toLocalDate()

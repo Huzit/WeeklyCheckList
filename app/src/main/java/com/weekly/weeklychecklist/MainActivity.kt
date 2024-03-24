@@ -102,10 +102,12 @@ class MainActivity : ComponentActivity() {
                         clVM.getCheckLists()
                         clVM.isSplashed = true
                         runBlocking {
-                            delay(100)
+                            //1초 미만으로 할 경우 데이터 베이스 읽는 속도 보다 스위치 정렬하는 속도가 늦음
+                            //DB 읽는 속도가 더 느려질 경우 발생할 수 있음, 대응방법 생각해볼 것
+                            delay(1000)
                         }
                         //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
-                        clVM.switchInitialization(this@MainActivity)
+                        clVM.switchInitialization(applicationContext)
                         false
                     }
                 }
@@ -279,8 +281,10 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                                         },
                                         indication = CheckListUtils.CustomIndication
                                     ) {
-                                        clVM.checkListUpdate[0].registerTime = LocalDateTime.now()
-                                        clVM.updateCheckListUpdate(clVM.checkListUpdate[0])
+                                        if(clVM.checkListUpdate.isNotEmpty()) {
+                                            clVM.checkListUpdate[0].registerTime = LocalDateTime.now()
+                                            clVM.updateCheckListUpdate(clVM.checkListUpdate[0])
+                                        }
                                     },
                         painter = painterResource(id = R.drawable.add),
                         contentDescription = "추가",
