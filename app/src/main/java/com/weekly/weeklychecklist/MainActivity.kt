@@ -141,6 +141,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        clVM.switchInitialization()
+    }
+
     override fun onPause(){
         super.onPause()
         Log.d(javaClass.simpleName, "onPause DB Insert")
