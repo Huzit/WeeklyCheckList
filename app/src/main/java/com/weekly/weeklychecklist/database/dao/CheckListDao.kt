@@ -1,6 +1,7 @@
 package com.weekly.weeklychecklist.database.dao
 
 import androidx.room.Dao
+import androidx.room.Entity
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.TypeConverters
@@ -22,6 +23,7 @@ interface CheckListDao {
 
     @Query("DELETE FROM CheckList WHERE idx = :idx")
     fun deleteCheckList(vararg idx: Long)
+
     @Query("""
             Update CheckList
                 Set listName = :listName,
@@ -39,4 +41,7 @@ interface CheckListDao {
         done: Boolean,
         lastUpdatedDate: LocalDateTime
     )
+
+    @Update
+    fun test(checkLists: List<CheckListEntity>)
 }

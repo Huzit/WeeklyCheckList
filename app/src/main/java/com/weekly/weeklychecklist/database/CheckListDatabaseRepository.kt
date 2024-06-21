@@ -106,6 +106,7 @@ class CheckListDatabaseRepository() {
         lastUpdatedDate: LocalDateTime
     ) {
         try {
+            //todo 매번 업데이트 할 때마다 get하고 있는데 비효율적
             val checkList = checkListDao.getCheckList(listName)
             if (checkList.isEmpty()) {
                 Log.d("updateCheckList", "checkList is Empty so Insert")
@@ -125,6 +126,11 @@ class CheckListDatabaseRepository() {
         } catch (e: IOException) {
             Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")
         }
+    }
+
+    //update All
+    fun updateCheckListAll(checkList: List<CheckListEntity>){
+        checkListDao.test(checkList)
     }
 
     //delete

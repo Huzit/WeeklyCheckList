@@ -102,10 +102,12 @@ class MainActivity : ComponentActivity() {
                         clVM.getCheckLists()
                         clVM.isSplashed = true
                         runBlocking {
-                            delay(100)
+                            //1초 미만으로 할 경우 데이터 베이스 읽는 속도 보다 스위치 정렬하는 속도가 늦음
+                            //DB 읽는 속도가 더 느려질 경우 발생할 수 있음, 대응방법 생각해볼 것
+                            delay(1000)
                         }
                         //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
-                        clVM.switchInitialization()
+                        clVM.switchInitialization(applicationContext)
                         false
                     }
                 }
@@ -140,17 +142,22 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
+    
     override fun onResume() {
         super.onResume()
-        clVM.switchInitialization()
+        if(!clVM.isSplashed) {
+            Log.d(javaClass.simpleName, "onResume 스위치 초기화")
+            clVM.switchInitialization(this)
+            clVM.onResumeRefreshed.value = !clVM.onResumeRefreshed.value
+        }
     }
 
     override fun onPause(){
         super.onPause()
         Log.d(javaClass.simpleName, "onPause DB Insert")
         clVM.isSplashed = false
-        clVM.updateCheckListAll()
+//        clVM.updateCheckListAll()
+        clVM.updateTest()
     }
 }
 
@@ -186,23 +193,23 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
     var openInfo: Pair<MutableState<Boolean>, MutableState<Int>>
     val util = CheckListUtils()
     //onResume 리컴포지션용
-    var refreshing by remember { mutableStateOf(false) }
-    val lifecycleEvent = rememberLifecycleEvent()
+    var refreshing by remember { clVM.onResumeRefreshed }
+//    val lifecycleEvent = rememberLifecycleEvent()
 
-    LaunchedEffect(lifecycleEvent){
-        when(lifecycleEvent){
-            Lifecycle.Event.ON_RESUME -> {
-                //요일 지나면 스위치 초기화
-                if(!clVM.isSplashed) {
-                    Log.d(javaClass.simpleName, "onResume 스위치 초기화")
-                    clVM.switchInitialization()
-                    refreshing = !refreshing
-                    clVM.customToggleRefreshingOnResumeState.value = refreshing
-                }
-            }
-            else -> {}
-        }
-    }
+//    LaunchedEffect(lifecycleEvent){
+//        when(lifecycleEvent){
+//            Lifecycle.Event.ON_RESUME -> {
+//                //요일 지나면 스위치 초기화
+//                if(!clVM.isSplashed) {
+//                    Log.d(javaClass.simpleName, "onResume 스위치 초기화")
+//                    clVM.switchInitialization()
+//                    refreshing = !refreshing
+////                    clVM.customToggleRefreshingOnResumeState.value = refreshing
+//                }
+//            }
+//            else -> {}
+//        }
+//    }
 
     key(refreshing) {
         val today = LocalDate.now()
@@ -259,7 +266,14 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                             tint = Color.White,
                         )
                         //test 요일 초기화 버튼
-                        /*Icon(
+                        /*Text(
+                            modifier = Modifier.padding(20.dp),
+                            text = if(clVM.checkListUpdate.size != 0) "${DateTimeFormatter.ofPattern("M월 dd일", Locale.KOREA).format(clVM.checkListUpdate[0].registerTime)}" else "",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color.Red
+                        )
+                        Icon(
                                 modifier = Modifier
                                     .size(30.dp)
                                     .clickable(
@@ -268,8 +282,10 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                                         },
                                         indication = CheckListUtils.CustomIndication
                                     ) {
-                                        clVM.checkListUpdate[0].registerTime = LocalDateTime.now()
-                                        clVM.updateCheckListUpdate(clVM.checkListUpdate[0])
+                                        if(clVM.checkListUpdate.isNotEmpty()) {
+                                            clVM.checkListUpdate[0].registerTime = LocalDateTime.now()
+                                            clVM.updateCheckListUpdate(clVM.checkListUpdate[0])
+                                        }
                                     },
                         painter = painterResource(id = R.drawable.add),
                         contentDescription = "추가",
