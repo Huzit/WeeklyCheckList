@@ -31,10 +31,8 @@ interface CheckListDao {
                     restartWeek = :restartWeek,
                     done = :done,
                     register_time = :lastUpdatedDate
-            where idx = :idx
             """)
     fun updateCheckList(
-        idx: Long,
         listName: String,
         checkListContent: String,
         restartWeek: MutableSet<MyDayOfWeek>,

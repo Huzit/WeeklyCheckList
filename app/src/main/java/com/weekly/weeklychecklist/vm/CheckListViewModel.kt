@@ -6,22 +6,23 @@ import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.toMutableStateList
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.weekly.weeklychecklist.MyDayOfWeek
 import com.weekly.weeklychecklist.database.CheckListDatabaseRepository
 import com.weekly.weeklychecklist.database.entity.CheckListEntity
 import com.weekly.weeklychecklist.database.entity.CheckListUpdateEntity
 import com.weekly.weeklychecklist.util.CheckListUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import javax.inject.Inject
 
-class CheckListViewModel() : ViewModel() {
+@HiltViewModel
+class CheckListViewModel @Inject constructor(private val checkListRepository: CheckListDatabaseRepository) : ViewModel() {
     private val TAG = "CheckListViewModel"
     //swipToDismiss 롤백 트리거
     var isSwipToDeleteCancel: Boolean = false
@@ -29,13 +30,12 @@ class CheckListViewModel() : ViewModel() {
     var isSplashed = false
     val onResumeRefreshed = mutableStateOf(false)
     var checkList = mutableStateListOf<CheckListEntity>()
-//    var customToggleRefreshingOnResumeState = mutableStateOf(false)
+    private var checkListInitialized = arrayListOf<CheckListEntity>()
     var customToggleRefreshingDraggableState = mutableStateOf(false)
     var listName = mutableStateOf<String>("default")
     var checkListUpdate = ArrayList<CheckListUpdateEntity>()
     val isSwipe = mutableStateOf(false)
 
-    private val checkListRepository = CheckListDatabaseRepository.getInstance()
     var isFinished = false
 
     fun getCheckLists(){
@@ -46,10 +46,9 @@ class CheckListViewModel() : ViewModel() {
             val clUpdate = getCheckListUpdate("default")
             //DB get
             if (clList.isNotEmpty()) {
-                Log.d(javaClass.simpleName, "clList size == ${clList.size}, startRow == ${clList.first()}")
                 checkList = clList.toMutableStateList()
                 checkListUpdate = clUpdate
-                Log.d("Get CheckLists", clList.toString())
+                checkListInitialized = clList
             }
             isFinished = true
         }
@@ -87,6 +86,17 @@ class CheckListViewModel() : ViewModel() {
         done: Boolean,
         lastUpdatedDate: LocalDateTime
     ) = CoroutineScope(Dispatchers.IO).launch {
+
+        if(checkListInitialized.isEmpty()) {
+            checkListRepository.insertCheckList(
+                listName,
+                checkListContent,
+                restartWeek,
+                done,
+                lastUpdatedDate
+            )
+            checkListInitialized = ArrayList(checkList)
+        }
         checkListRepository.updateCheckList(
             idx,
             listName,
@@ -98,7 +108,6 @@ class CheckListViewModel() : ViewModel() {
     }
     //스와이프 해도 안바뀌는건 이 부분 오류
     fun updateCheckListAll() = CoroutineScope(Dispatchers.IO).launch {
-        Log.d("Updated CheckLists", checkList.toString())
         if(checkList.isNotEmpty()){
             checkList.forEach{ list ->
                 checkListRepository.updateCheckList(

@@ -14,25 +14,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.time.LocalDateTime
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CheckListDatabaseRepository() {
+@Singleton
+class CheckListDatabaseRepository @Inject constructor(private val checkListDao: CheckListDao, private val checkListUpdateDao: CheckListUpdateDao) {
     private val TAG = javaClass.simpleName
     private lateinit var db: CheckListDatabase
-    private lateinit var checkListDao: CheckListDao
-    private lateinit var checkListUpdateDao: CheckListUpdateDao
-
-    companion object: SingletonHolderNoProperty<CheckListDatabaseRepository>(::CheckListDatabaseRepository)
 
     //초기화
-    fun initDatabase(context: Context) = CoroutineScope(Dispatchers.IO).launch {
-        db = Room.databaseBuilder(
-            context,
-            CheckListDatabase::class.java,
-            "CheckListDatabase"
-        ).build()
-        checkListDao = db.checkListDao()
-        checkListUpdateDao = db.checkListUpdateDao()
-    }
+//    fun initDatabase(context: Context) = CoroutineScope(Dispatchers.IO).launch {
+//        db = Room.databaseBuilder(
+//            context,
+//            CheckListDatabase::class.java,
+//            "CheckListDatabase"
+//        ).build()
+//    }
     
     fun insertCheckListUpdate(
         listName: String,
@@ -104,28 +101,14 @@ class CheckListDatabaseRepository() {
         restartWeek: MutableSet<MyDayOfWeek>,
         done: Boolean,
         lastUpdatedDate: LocalDateTime
-    ) {
-        try {
-            //todo 매번 업데이트 할 때마다 get하고 있는데 비효율적
-            val checkList = checkListDao.getCheckList(listName)
-            if (checkList.isEmpty()) {
-                Log.d("updateCheckList", "checkList is Empty so Insert")
-                insertCheckList(listName, checkListContent, restartWeek, done, lastUpdatedDate)
-            }
-            else {
-                Log.d("updateCheckList", "checkList update done")
-                checkListDao.updateCheckList(
-                    idx,
-                    listName,
-                    checkListContent,
-                    restartWeek,
-                    done,
-                    lastUpdatedDate
-                )
-            }
-        } catch (e: IOException) {
-            Log.e(javaClass.simpleName, "Database sync(Update & Insert) is Failed")
-        }
+    ){
+        checkListDao.updateCheckList(
+            listName,
+            checkListContent,
+            restartWeek,
+            done,
+            lastUpdatedDate
+        )
     }
 
     //update All

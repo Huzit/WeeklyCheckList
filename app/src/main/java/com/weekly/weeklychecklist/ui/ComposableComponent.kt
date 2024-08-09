@@ -905,15 +905,8 @@ fun dpToSp(dp: Dp) = with(LocalDensity.current) { dp.toSp() }
 fun SwitchPreview() {
     Column {
         weekSelectButton(MyDayOfWeek.널)
-//        CustomToggleButton(0)
-//        CustomToggleButton(0)
-        ChecklistWriteBoard(clVM = CheckListViewModel()) {}
-        CustomSnackBar(visible = true, text = "TestText") {
-        }
-//        CheckListBox(
-//            item = CheckListInfo(1, "preview content", setOf(MyDayOfWeek.월), false),
-//            1,
-//        )
+//        ChecklistWriteBoard(clVM = CheckListViewModel()) {}
+        CustomSnackBar(visible = true, text = "TestText") {}
     }
 }
 
