@@ -103,6 +103,7 @@ class CheckListDatabaseRepository @Inject constructor(private val checkListDao: 
         lastUpdatedDate: LocalDateTime
     ){
         checkListDao.updateCheckList(
+            idx,
             listName,
             checkListContent,
             restartWeek,

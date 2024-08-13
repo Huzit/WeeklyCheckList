@@ -24,6 +24,8 @@ data class CheckListEntity(
     var registerTime: LocalDateTime
 
 ){
+    constructor(checkListEntity: CheckListEntity): this(checkListEntity.listName, checkListEntity.checklistContent, checkListEntity.restartWeek, checkListEntity.done, checkListEntity.registerTime)
+
     @PrimaryKey(autoGenerate = true)
     var idx: Long = 0
 }

@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
         onBackPressedDispatcher.addCallback(backPressedCallBack(this))
 
         setContent {
-            WeeklyChecklistApp(context = this, clVM = clVM)
+            WeeklyChecklistApp(clVM = clVM)
         }
         //splash screen
         val content = findViewById<View>(android.R.id.content)
@@ -58,12 +58,6 @@ class MainActivity : ComponentActivity() {
                         //splash 화면 중 데이터 베이스 init
                         clVM.getCheckLists()
                         clVM.isSplashed = true
-//                        runBlocking {
-//                            //1초 미만으로 할 경우 데이터 베이스 읽는 속도 보다 스위치 정렬하는 속도가 늦음
-//                            //DB 읽는 속도가 더 느려질 경우 발생할 수 있음, 대응방법 생각해볼 것
-//                            delay(1000)
-//                        }
-                        //DB GET -> 스위치 정렬이라 recomposition 2회 일어나는게 정상
                         clVM.switchInitialization(applicationContext)
                         false
                     }

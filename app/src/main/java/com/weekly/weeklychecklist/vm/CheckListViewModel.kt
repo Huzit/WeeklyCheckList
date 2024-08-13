@@ -15,6 +15,8 @@ import com.weekly.weeklychecklist.util.CheckListUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -29,7 +31,6 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
     //스플래시 화면 true : 지남, false : 안지남
     var isSplashed = false
     val onResumeRefreshed = mutableStateOf(false)
-    var checkList = mutableStateListOf<CheckListEntity>()
     private var checkListInitialized = arrayListOf<CheckListEntity>()
     var customToggleRefreshingDraggableState = mutableStateOf(false)
     var listName = mutableStateOf<String>("default")
@@ -37,6 +38,9 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
     val isSwipe = mutableStateOf(false)
 
     var isFinished = false
+
+    private var _checkList = MutableStateFlow(arrayListOf(CheckListEntity("", "", mutableSetOf(MyDayOfWeek.널), false, LocalDateTime.now())))
+    var checkList: StateFlow<ArrayList<CheckListEntity>> = _checkList
 
     fun getCheckLists(){
         CoroutineScope(Dispatchers.IO).launch {
@@ -46,7 +50,7 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
             val clUpdate = getCheckListUpdate("default")
             //DB get
             if (clList.isNotEmpty()) {
-                checkList = clList.toMutableStateList()
+                _checkList.emit(clList)
                 checkListUpdate = clUpdate
                 checkListInitialized = clList
             }
@@ -95,7 +99,7 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
                 done,
                 lastUpdatedDate
             )
-            checkListInitialized = ArrayList(checkList)
+            checkListInitialized = ArrayList(checkList.value)
         }
         checkListRepository.updateCheckList(
             idx,
@@ -108,8 +112,9 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
     }
     //스와이프 해도 안바뀌는건 이 부분 오류
     fun updateCheckListAll() = CoroutineScope(Dispatchers.IO).launch {
-        if(checkList.isNotEmpty()){
-            checkList.forEach{ list ->
+        if(checkList.value.isNotEmpty()){
+            checkList.value.forEach{ list ->
+                Log.d("디버그 인서트 정보", list.toString())
                 checkListRepository.updateCheckList(
                     list.idx,
                     list.listName,
@@ -124,10 +129,10 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
 
     fun updateTest(){
         CoroutineScope(Dispatchers.IO).launch {
-            checkList.forEach {
+            checkList.value.forEach {
                 Log.d("디버그 | 체크리스트", it.toString())
             }
-            checkListRepository.updateCheckListAll(checkList)
+            checkListRepository.updateCheckListAll(checkList.value)
         }
     }
 
@@ -200,10 +205,6 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
         )
     }
 
-    fun forceRecomposition(){
-        checkList = ArrayList(checkList.toList()).toMutableStateList()
-    }
-
     //요일마다 스위치 초기화
     fun switchInitialization(context: Context) {
         /***
@@ -232,7 +233,7 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
         //일주일 이상 지났을 시 전체 초기화
             if (passedWeek.size >= 7) {
                 Log.d(javaClass.simpleName, "7일 이상 경과, 전체 초기화")
-                checkList.forEach { item ->
+                checkList.value.forEach { item ->
                     item.done = false
                 }
                 checkListUpdate[0].apply {
@@ -247,7 +248,7 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
             //최근 접속일 이 일주일 미만일 시
             else {
                 Log.d(javaClass.simpleName, "일주일 미만, 부분 초기화")
-                checkList.forEachIndexed { index, item ->
+                checkList.value.forEachIndexed { index, item ->
                     if (!checkListUpdate[0].isUpdate) {
                         item.restartWeek.forEach { week ->
                             if (passedWeek.contains(week)) {
@@ -256,7 +257,7 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
                             }
                         }
                         //마지막 일 시
-                        if (index == checkList.size - 1) {
+                        if (index == checkList.value.size - 1) {
                             Log.d(javaClass.simpleName, "초기화 요일 정보 :${checkListUpdate}")
                             checkListUpdate[0].apply {
                                 isUpdate = true
@@ -296,6 +297,32 @@ class CheckListViewModel @Inject constructor(private val checkListRepository: Ch
 
     fun deleteCheckList(deleteIndex: Long) = CoroutineScope(Dispatchers.IO).launch {
         checkListRepository.deleteDatabase(deleteIndex)
+    }
+//todo 드래그 시 재대로 안바뀌는거 여기 문제
+    suspend fun changeListElement(fromIndex: Int, toIndex: Int){
+        _checkList.value.apply {
+            val fromEntity = CheckListEntity(this[fromIndex])
+            val toEntity = CheckListEntity(this[toIndex])
+
+            this[fromIndex].let {
+                it.listName = toEntity.listName
+                it.checklistContent = toEntity.checklistContent
+                it.restartWeek = toEntity.restartWeek
+                it.done = toEntity.done
+                it.registerTime = toEntity.registerTime
+            }
+            this[toIndex].let {
+                it.listName = fromEntity.listName
+                it.checklistContent = fromEntity.checklistContent
+                it.restartWeek = fromEntity.restartWeek
+                it.done = fromEntity.done
+                it.registerTime = fromEntity.registerTime
+            }
+            Log.d("디버그 리스트 scope", this.toString())
+        }
+
+        Log.d("디버그 리스트 viewmodel", checkList.value.toString())
+        Log.d("디버그 리스트 viewmodel", _checkList.value.toString())
     }
 
     //java.time.DayOfWeek 를 MyDayOfWeek로 변경

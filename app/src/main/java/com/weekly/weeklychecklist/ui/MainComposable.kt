@@ -22,7 +22,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,7 +43,7 @@ import java.util.Locale
 
 //앱 전체 컴포저블
 @Composable
-fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
+fun WeeklyChecklistApp(clVM: CheckListViewModel) {
     val cornerSize = 7
     val boxHeight = LocalConfiguration.current.screenHeightDp.minus(50).dp
     //Custom SnackBar 트리거
@@ -166,8 +165,6 @@ fun WeeklyChecklistApp(context: MainActivity, clVM: CheckListViewModel) {
                         openIndex = openInfo.second
                     }
                 }
-                //플로팅 버튼
-//                FloatingActions(context, clVM)
                 //커스텀 스낵바
                 CustomSnackBar(
                     visible = clVM.isSwipe.value,
